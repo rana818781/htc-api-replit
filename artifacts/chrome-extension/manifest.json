@@ -35,6 +35,13 @@
       "matches": [
         "https://labs.google/fx/tools/flow*"
       ],
+      "js": ["header_lock.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://labs.google/fx/tools/flow*"
+      ],
       "js": ["project_filter.js"],
       "run_at": "document_idle"
     },
