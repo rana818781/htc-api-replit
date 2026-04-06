@@ -1,42 +1,31 @@
 import { getAuth } from "@clerk/express";
 import type { Request, Response, NextFunction } from "express";
-import { eq, or } from "drizzle-orm";
-import { db, usersTable, plansTable } from "@workspace/db";
-import { logger } from "../lib/logger";
+import { eq } from "drizzle-orm";
+import { db, usersTable, apiTokensTable } from "@workspace/db";
 
 export interface AuthenticatedRequest extends Request {
   clerkUserId?: string;
-  dbUser?: {
-    id: number;
-    clerkUserId: string;
-    email: string;
-    isAdmin: boolean;
-    planId: number | null;
-    creditsTotal: number;
-    creditsUsed: number;
-  };
+  dbUser?: typeof usersTable.$inferSelect;
 }
 
 export async function getOrCreateUser(
   clerkUserId: string,
   email: string,
 ): Promise<typeof usersTable.$inferSelect> {
-  // First try to find by clerkUserId
-  let [user] = await db
+  const [byClerkId] = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.clerkUserId, clerkUserId));
 
-  if (user) return user;
+  if (byClerkId) return byClerkId;
 
-  // Try to find by email (handles pre-created manual_ users)
+  // Check by email — handles pre-created manual_ users
   const [byEmail] = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.email, email));
 
   if (byEmail) {
-    // If found by email and has manual_ prefixed clerkUserId, update to real Clerk ID
     if (byEmail.clerkUserId.startsWith("manual_")) {
       const [updated] = await db
         .update(usersTable)
@@ -48,7 +37,6 @@ export async function getOrCreateUser(
     return byEmail;
   }
 
-  // Create a new user
   const [newUser] = await db
     .insert(usersTable)
     .values({ clerkUserId, email })
@@ -102,8 +90,6 @@ export async function requireApiToken(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  // Import here to avoid circular dep issues at module load
-  const { apiTokensTable } = await import("@workspace/db");
   const token = req.headers["x-api-token"] as string | undefined;
   if (!token) {
     res.status(401).json({ error: "Missing X-API-Token header" });
@@ -120,7 +106,6 @@ export async function requireApiToken(
     return;
   }
 
-  // Update lastUsedAt
   await db
     .update(apiTokensTable)
     .set({ lastUsedAt: new Date() })

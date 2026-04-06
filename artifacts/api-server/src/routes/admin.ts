@@ -147,38 +147,44 @@ router.post("/admin/users", async (req: AuthenticatedRequest, res): Promise<void
 
   const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
+  // Create the Clerk user, then explicitly mark the email as verified.
+  // If either step fails the request fails — no silent fallbacks on the verification step.
   let clerkUser;
   try {
-    // Create Clerk user with email already verified (no verification email sent).
-    // emailAddress is set with verification: "from_admin" to skip the email flow.
     clerkUser = await clerk.users.createUser({
       emailAddress: [email],
       password,
       skipPasswordChecks: false,
-      // Mark the primary email as verified so no verification email is sent.
-      // This is the correct Clerk Backend API approach for admin-created accounts.
     });
-
-    // Immediately verify the email address so no verification flow is triggered.
-    const primaryEmail = clerkUser.emailAddresses.find(
-      (e) => e.emailAddress === email,
-    );
-    if (primaryEmail && primaryEmail.verification?.status !== "verified") {
-      try {
-        await clerk.emailAddresses.updateEmailAddress(primaryEmail.id, {
-          verified: true,
-          primary: true,
-        } as Parameters<typeof clerk.emailAddresses.updateEmailAddress>[1]);
-      } catch {
-        // Verification update may not be available in all Clerk plans — safe to ignore.
-      }
-    }
   } catch (err: unknown) {
     req.log.error({ err }, "Failed to create Clerk user");
     const clerkErr = err as { errors?: Array<{ message: string }> };
     const message = clerkErr?.errors?.[0]?.message ?? "Failed to create user in Clerk";
     res.status(400).json({ error: message });
     return;
+  }
+
+  // Immediately mark the email as verified so no verification email is sent.
+  const primaryEmail = clerkUser.emailAddresses.find(
+    (e) => e.emailAddress === email,
+  );
+  if (primaryEmail && primaryEmail.verification?.status !== "verified") {
+    try {
+      await clerk.emailAddresses.updateEmailAddress(primaryEmail.id, {
+        verified: true,
+        primary: true,
+      } as Parameters<typeof clerk.emailAddresses.updateEmailAddress>[1]);
+    } catch (verifyErr: unknown) {
+      // Verification update failed — delete the partially-created Clerk user and fail the request.
+      try {
+        await clerk.users.deleteUser(clerkUser.id);
+      } catch {
+        // Best-effort cleanup; log if needed.
+      }
+      req.log.error({ verifyErr }, "Failed to verify email address for admin-created user");
+      res.status(500).json({ error: "Failed to mark email as verified; user was not created" });
+      return;
+    }
   }
 
   const [newUser] = await db
