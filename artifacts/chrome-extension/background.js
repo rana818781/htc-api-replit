@@ -69,35 +69,46 @@ async function fetchAndInject(token, tabId) {
 
   // Inject each cookie into labs.google
   for (const cookie of cookies) {
-    // Build the URL for setting cookies
     const rawDomain = cookie.domain || "labs.google";
     const cleanDomain = rawDomain.startsWith(".") ? rawDomain.slice(1) : rawDomain;
-    const cookieUrl = cookie.secure ? `https://${cleanDomain}` : `http://${cleanDomain}`;
+
+    // Always use https:// — labs.google is HTTPS-only
+    const cookieUrl = `https://${cleanDomain}`;
 
     const details = {
       url: cookieUrl,
       name: cookie.name,
       value: cookie.value,
-      domain: rawDomain,
       path: cookie.path || "/",
       secure: cookie.secure === true,
       httpOnly: cookie.httpOnly === true,
     };
 
-    // sameSite: null means "no_restriction" in Chrome extension API
+    // __Host- prefix cookies MUST NOT have a domain attribute (Chrome requirement)
+    // __Secure- prefix cookies can have domain but must be secure
+    // All other cookies get their domain set
+    if (!cookie.name.startsWith("__Host-")) {
+      details.domain = rawDomain;
+    }
+
+    // sameSite: null → "no_restriction" in Chrome extension API
     if (cookie.sameSite === "lax") details.sameSite = "lax";
     else if (cookie.sameSite === "strict") details.sameSite = "strict";
     else details.sameSite = "no_restriction";
 
-    // Only set expirationDate for persistent cookies (session: false)
-    // Session cookies must NOT have an expirationDate
+    // Only set expirationDate for persistent (non-session) cookies
     if (!cookie.session && cookie.expirationDate) {
       details.expirationDate = Math.floor(cookie.expirationDate);
     }
 
-    await chrome.cookies.set(details).catch((err) => {
-      console.warn(`[FlowAccess] Failed to set cookie ${cookie.name}:`, err);
+    const setCookieResult = await chrome.cookies.set(details).catch((err) => {
+      console.warn(`[FlowAccess] Failed to set cookie "${cookie.name}":`, err?.message || err);
+      return null;
     });
+
+    if (setCookieResult) {
+      console.log(`[FlowAccess] Set cookie: ${cookie.name}`);
+    }
   }
 
   // Update cached user credits
