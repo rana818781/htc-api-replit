@@ -44,18 +44,27 @@ async function fetchAndInject(token, tabId) {
 
   const { cookieData, creditsRemaining } = await res.json();
 
-  // Parse cookies
+  // Parse cookies — supports JSON array (EditThisCookie) or document.cookie string
   let cookies = [];
-  try {
-    cookies = JSON.parse(cookieData);
-  } catch {
-    cookies = cookieData
+  const trimmed = cookieData.trim();
+  if (trimmed.startsWith("[")) {
+    // JSON array format (EditThisCookie / Cookie-Editor)
+    try { cookies = JSON.parse(trimmed); } catch { cookies = []; }
+  } else {
+    // document.cookie string format: "name=value; name2=value2; ..."
+    cookies = trimmed
       .split(";")
       .map((part) => {
-        const [name, ...valParts] = part.trim().split("=");
-        return { name: name.trim(), value: valParts.join("=").trim() };
+        const idx = part.indexOf("=");
+        if (idx === -1) return null;
+        const name = part.slice(0, idx).trim();
+        const value = part.slice(idx + 1).trim();
+        if (!name) return null;
+        // Infer secure from cookie name prefix
+        const secure = name.startsWith("__Secure-") || name.startsWith("__Host-");
+        return { name, value, secure, httpOnly: false, session: true, domain: "labs.google" };
       })
-      .filter((c) => c.name);
+      .filter(Boolean);
   }
 
   // Inject each cookie into labs.google

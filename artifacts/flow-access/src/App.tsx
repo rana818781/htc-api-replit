@@ -14,6 +14,7 @@ import Dashboard from "./pages/dashboard";
 import Plans from "./pages/plans";
 import Usage from "./pages/usage";
 import Admin from "./pages/admin";
+import AdminAddSession from "./pages/admin-add-session";
 import NotFound from "./pages/not-found";
 import { Layout } from "./components/layout";
 
@@ -177,6 +178,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
           <Route path="/plans" component={() => <PublicRouteWithLayout component={Plans} />} />
           <Route path="/usage" component={() => <ProtectedRoute component={Usage} />} />
+          <Route path="/admin/sessions/new" component={() => <AdminRoute component={AdminAddSession} />} />
           <Route path="/admin" component={() => <AdminRoute component={Admin} />} />
           <Route component={() => <Layout><NotFound /></Layout>} />
         </Switch>

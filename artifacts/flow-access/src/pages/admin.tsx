@@ -8,7 +8,6 @@ import {
   useGetCurrentUser,
   useGetAdminStats,
   useListAdminSessions,
-  useCreateAdminSession,
   useUpdateAdminSession,
   useDeleteAdminSession,
   useListAdminUsers,
@@ -36,7 +35,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Users, Key, Activity, Plus, Edit, Trash2 } from "lucide-react";
+import { ShieldAlert, Users, Key, Activity, Plus, Edit, Trash2, ExternalLink } from "lucide-react";
+import { Link } from "wouter";
 
 const sessionSchema = z.object({
   label: z.string().min(1, "Label is required"),
@@ -250,35 +250,15 @@ function SessionsTab() {
   const { data: sessions, isLoading } = useListAdminSessions();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const createMutation = useCreateAdminSession();
   const updateMutation = useUpdateAdminSession();
   const deleteMutation = useDeleteAdminSession();
   
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editSessionId, setEditSessionId] = useState<number | null>(null);
-
-  const createForm = useForm<z.infer<typeof sessionSchema>>({
-    resolver: zodResolver(sessionSchema),
-    defaultValues: { label: "", cookieData: "", isActive: true },
-  });
 
   const editForm = useForm<z.infer<typeof sessionSchema>>({
     resolver: zodResolver(sessionSchema),
     defaultValues: { label: "", cookieData: "", isActive: true },
   });
-
-  const onCreateSubmit = (values: z.infer<typeof sessionSchema>) => {
-    createMutation.mutate({ data: values }, {
-      onSuccess: () => {
-        toast({ title: "Session Added", description: `"${values.label}" is now active.` });
-        setIsCreateOpen(false);
-        createForm.reset();
-        queryClient.invalidateQueries({ queryKey: getListAdminSessionsQueryKey() });
-        queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
-      },
-      onError: () => toast({ title: "Error", description: "Failed to add session.", variant: "destructive" }),
-    });
-  };
 
   const onEditSubmit = (values: z.infer<typeof sessionSchema>) => {
     if (!editSessionId) return;
@@ -321,20 +301,11 @@ function SessionsTab() {
             Add labs.google session cookies so users can access Google Flow AI. Export cookies using <strong>EditThisCookie</strong> or <strong>Cookie-Editor</strong>.
           </CardDescription>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) createForm.reset(); }}>
-          <DialogTrigger asChild>
-            <Button size="sm" data-testid="btn-new-session"><Plus className="h-4 w-4 mr-2" /> Add Session</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-xl">
-            <DialogHeader>
-              <DialogTitle>Add New Google Session</DialogTitle>
-              <DialogDescription>
-                Log in to <strong>labs.google/fx/tools/flow</strong>, export all cookies as JSON, then paste below.
-              </DialogDescription>
-            </DialogHeader>
-            <SessionForm form={createForm} onSubmit={onCreateSubmit} isPending={createMutation.isPending} submitLabel="Add Session" />
-          </DialogContent>
-        </Dialog>
+        <Link href="/admin/sessions/new">
+          <Button size="sm" data-testid="btn-new-session">
+            <Plus className="h-4 w-4 mr-2" /> Add Session
+          </Button>
+        </Link>
       </CardHeader>
       <CardContent>
         {isLoading ? <Skeleton className="h-[300px] w-full" /> : (
