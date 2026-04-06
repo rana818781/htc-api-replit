@@ -1,4 +1,5 @@
-import { db, plansTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { db, plansTable, usersTable } from "@workspace/db";
 import { logger } from "./logger";
 
 const DEFAULT_PLANS = [
@@ -24,6 +25,33 @@ const DEFAULT_PLANS = [
     isActive: true,
   },
 ];
+
+export async function seedAdmin(): Promise<void> {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) return;
+
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, adminEmail));
+
+  if (!user) {
+    logger.info({ adminEmail }, "Admin user not found in DB yet, skipping");
+    return;
+  }
+
+  if (user.isAdmin) {
+    logger.info({ adminEmail }, "Admin already set, skipping");
+    return;
+  }
+
+  await db
+    .update(usersTable)
+    .set({ isAdmin: true })
+    .where(eq(usersTable.email, adminEmail));
+
+  logger.info({ adminEmail }, "Admin privileges granted on startup");
+}
 
 export async function seedPlans(): Promise<void> {
   const existing = await db.select().from(plansTable);

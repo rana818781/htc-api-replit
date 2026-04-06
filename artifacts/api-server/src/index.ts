@@ -1,6 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { seedPlans } from "./lib/seed";
+import { seedPlans, seedAdmin } from "./lib/seed";
 
 const rawPort = process.env["PORT"];
 
@@ -19,6 +19,11 @@ if (Number.isNaN(port) || port <= 0) {
 // Seed default plans on startup
 seedPlans().catch((err) => {
   logger.error({ err }, "Failed to seed plans");
+});
+
+// Ensure the designated admin user has admin privileges on every startup
+seedAdmin().catch((err) => {
+  logger.error({ err }, "Failed to seed admin");
 });
 
 app.listen(port, (err) => {
