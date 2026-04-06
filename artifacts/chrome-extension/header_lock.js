@@ -1,6 +1,7 @@
 // FlowAccess — Header Lock (runs at document_start)
 // Main page: blocks ?, three-dot, ULTRA, profile
 // Project page (/project/): blocks three-dot, ULTRA + profile avatar
+// All pages: blocks "Veo 3.1 - Quality" model selection
 
 (function () {
   "use strict";
@@ -112,6 +113,40 @@
       if (text.length > 20) continue;
 
       lockEl(el);
+    }
+
+    var BLOCKED_MODELS = ["veo 3.1 - quality"];
+
+    var allEls = document.querySelectorAll("button, [role='button'], [role='option'], [role='menuitem'], [role='menuitemradio'], li, div[class]");
+    for (var i = 0; i < allEls.length; i++) {
+      var item = allEls[i];
+      if (item.getAttribute("data-fa-model-blocked")) continue;
+      var itemText = (item.textContent || "").trim().toLowerCase();
+      for (var b = 0; b < BLOCKED_MODELS.length; b++) {
+        if (itemText === BLOCKED_MODELS[b]) {
+          item.setAttribute("data-fa-model-blocked", "1");
+          item.style.setProperty("display", "none", "important");
+          item.style.setProperty("pointer-events", "none", "important");
+          item.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+          }, true);
+          break;
+        }
+      }
+    }
+
+    var selectors = document.querySelectorAll("button, [role='combobox'], [role='listbox'], [class*='select'], [class*='dropdown']");
+    for (var s = 0; s < selectors.length; s++) {
+      var sel = selectors[s];
+      var selText = (sel.textContent || "").trim().toLowerCase();
+      for (var b2 = 0; b2 < BLOCKED_MODELS.length; b2++) {
+        if (selText === BLOCKED_MODELS[b2]) {
+          sel.style.setProperty("outline", "2px solid #ff4444", "important");
+          sel.style.setProperty("opacity", "0.5", "important");
+        }
+      }
     }
 
     var menus = document.querySelectorAll("[role='menu'], [role='listbox']");
