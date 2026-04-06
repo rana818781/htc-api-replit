@@ -1,30 +1,25 @@
-// FlowAccess Background Service Worker
-// Handles cookie injection and prevents infinite reload loops
+// FlowAccess Background Service Worker v2.0
+// Handles cookie injection into labs.google for FlowAccess subscribers
 
+const API_BASE = "https://ultraflow.replit.app";
 const FLOW_URL = "https://labs.google/fx/tools/flow";
-const API_BASE = ""; // Will be set via storage or use the replit.app domain
 
 // Track tabs we reloaded ourselves to prevent infinite reload loop
 const justReloaded = new Set();
 
-// Get stored API token
+// ─── Token Helpers ────────────────────────────────────────────────────────────
+
 async function getToken() {
   const result = await chrome.storage.local.get("flowaccess_token");
   return result.flowaccess_token || null;
 }
 
-// Get stored API base URL
-async function getApiBase() {
-  const result = await chrome.storage.local.get("flowaccess_api_base");
-  return result.flowaccess_api_base || "";
-}
+// ─── API Calls ────────────────────────────────────────────────────────────────
 
-// Fetch user info using API token
 async function fetchUserInfo(token) {
-  const apiBase = await getApiBase();
-  if (!apiBase || !token) return null;
+  if (!token) return null;
   try {
-    const resp = await fetch(`${apiBase}/api/extension/me`, {
+    const resp = await fetch(`${API_BASE}/api/extension/me`, {
       headers: { "X-API-Token": token },
     });
     if (!resp.ok) return null;
@@ -34,15 +29,11 @@ async function fetchUserInfo(token) {
   }
 }
 
-// Inject cookies into the browser for labs.google
 async function injectCookies(token) {
-  const apiBase = await getApiBase();
-  if (!apiBase || !token) {
-    return { success: false, error: "No API configuration" };
-  }
+  if (!token) return { success: false, error: "Not connected" };
 
   try {
-    const resp = await fetch(`${apiBase}/api/extension/inject`, {
+    const resp = await fetch(`${API_BASE}/api/extension/inject`, {
       method: "POST",
       headers: { "X-API-Token": token },
     });
@@ -55,47 +46,52 @@ async function injectCookies(token) {
     }
 
     const data = await resp.json();
-    const cookies = JSON.parse(data.cookieData);
+    let cookies = [];
+    try {
+      cookies = JSON.parse(data.cookieData);
+    } catch {
+      // fallback: plain key=value pairs
+      cookies = data.cookieData
+        .split(";")
+        .map((p) => {
+          const [name, ...rest] = p.trim().split("=");
+          return { name: name.trim(), value: rest.join("=").trim() };
+        })
+        .filter((c) => c.name);
+    }
 
-    // Set all cookies for labs.google
     for (const cookie of cookies) {
       try {
-        const cookieDetails = {
+        await chrome.cookies.set({
           url: "https://labs.google",
           name: cookie.name,
           value: cookie.value,
           domain: cookie.domain || ".labs.google",
           path: cookie.path || "/",
-          secure: cookie.secure !== undefined ? cookie.secure : true,
-          httpOnly: cookie.httpOnly !== undefined ? cookie.httpOnly : false,
-        };
-        if (cookie.sameSite) {
-          cookieDetails.sameSite = cookie.sameSite;
-        }
-        if (cookie.expirationDate) {
-          cookieDetails.expirationDate = cookie.expirationDate;
-        }
-        await chrome.cookies.set(cookieDetails);
+          secure: cookie.secure !== false,
+          sameSite: cookie.sameSite || "no_restriction",
+          expirationDate:
+            cookie.expirationDate ||
+            Math.floor(Date.now() / 1000) + 86400 * 7,
+        });
       } catch (e) {
-        console.warn("Failed to set cookie:", cookie.name, e);
+        console.warn("FlowAccess: could not set cookie", cookie.name, e);
       }
     }
 
-    return {
-      success: true,
-      creditsRemaining: data.creditsRemaining,
-    };
+    return { success: true, creditsRemaining: data.creditsRemaining };
   } catch (err) {
     return { success: false, error: err.message };
   }
 }
 
-// Listen for tab navigation to Google Flow
+// ─── Auto-Inject on Navigation ────────────────────────────────────────────────
+
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status !== "loading") return;
-  if (!tab.url || !tab.url.startsWith(FLOW_URL)) return;
+  if (!tab.url?.startsWith(FLOW_URL)) return;
 
-  // Prevent infinite reload loop
+  // Skip tabs we reloaded ourselves (prevent infinite loop)
   if (justReloaded.has(tabId)) {
     justReloaded.delete(tabId);
     return;
@@ -107,68 +103,66 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   const result = await injectCookies(token);
 
   if (result.success) {
-    // Mark tab as about to be reloaded by us
     justReloaded.add(tabId);
-    // Reload after cookies are set
-    setTimeout(() => {
-      chrome.tabs.reload(tabId);
-    }, 800);
+    setTimeout(() => chrome.tabs.reload(tabId), 800);
   }
 });
 
-// Message handlers
+// ─── Message Handler ──────────────────────────────────────────────────────────
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     switch (message.type) {
+
+      // Site bridge: token auto-detected from FlowAccess website
       case "FA_AUTH_UPDATE": {
         if (message.token) {
           await chrome.storage.local.set({ flowaccess_token: message.token });
+          // Verify it works
+          const user = await fetchUserInfo(message.token);
+          sendResponse({ success: !!user, user: user ?? null });
+        } else {
+          sendResponse({ success: false });
         }
-        if (message.apiBase) {
-          await chrome.storage.local.set({ flowaccess_api_base: message.apiBase });
-        }
-        sendResponse({ success: true });
         break;
       }
 
+      // Popup: get current status
       case "FA_GET_STATUS": {
         const token = await getToken();
-        if (!token) {
+        if (!token) { sendResponse({ connected: false }); break; }
+        const user = await fetchUserInfo(token);
+        if (!user) {
+          await chrome.storage.local.remove("flowaccess_token");
           sendResponse({ connected: false });
           break;
         }
-        const user = await fetchUserInfo(token);
-        sendResponse({ connected: !!user, user });
+        sendResponse({ connected: true, user });
         break;
       }
 
+      // Popup: manually inject & open Flow
       case "FA_INJECT": {
         const token = await getToken();
-        if (!token) {
-          sendResponse({ success: false, error: "Not connected" });
-          break;
-        }
+        if (!token) { sendResponse({ success: false, error: "Not connected" }); break; }
         const result = await injectCookies(token);
         sendResponse(result);
         break;
       }
 
+      // Popup: disconnect
       case "FA_LOGOUT": {
-        await chrome.storage.local.remove(["flowaccess_token"]);
+        await chrome.storage.local.remove("flowaccess_token");
         sendResponse({ success: true });
         break;
       }
 
+      // Content script: session not active — re-inject
       case "SESSION_NOT_ACTIVE": {
-        // Re-inject without reload
         const token = await getToken();
-        if (!token) {
-          sendResponse({ success: false });
-          break;
-        }
+        if (!token) { sendResponse({ success: false }); break; }
         const result = await injectCookies(token);
         if (result.success && sender.tab?.id) {
-          // Send reload message to content script
           chrome.tabs.sendMessage(sender.tab.id, { type: "RELOAD" });
         }
         sendResponse(result);
@@ -179,5 +173,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: false, error: "Unknown message type" });
     }
   })();
-  return true; // Keep message channel open for async response
+
+  return true; // Keep channel open for async response
 });

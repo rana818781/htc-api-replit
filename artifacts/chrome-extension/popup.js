@@ -1,6 +1,7 @@
-// FlowAccess Popup Script
+// FlowAccess Popup Script v2.0
 
 const FLOW_URL = "https://labs.google/fx/tools/flow";
+const SITE_URL = "https://ultraflow.replit.app";
 
 const statusDot = document.getElementById("status-dot");
 const statusText = document.getElementById("status-text");
@@ -13,14 +14,13 @@ const tokenSection = document.getElementById("token-section");
 const tokenInput = document.getElementById("token-input");
 const btnConnect = document.getElementById("btn-connect");
 const messageEl = document.getElementById("message");
+const btnVisitSite = document.getElementById("btn-visit-site");
 
 function showMessage(text, type = "error") {
   messageEl.textContent = text;
   messageEl.className = `message ${type}`;
   messageEl.style.display = "block";
-  setTimeout(() => {
-    messageEl.style.display = "none";
-  }, 3000);
+  setTimeout(() => { messageEl.style.display = "none"; }, 3500);
 }
 
 function setConnected(user) {
@@ -31,10 +31,10 @@ function setConnected(user) {
   const noCredits = user.creditsRemaining <= 0;
   userCreditsEl.textContent = noCredits
     ? "No credits remaining — please upgrade"
-    : `${user.creditsRemaining} credits remaining`;
+    : `${user.creditsRemaining} credit${user.creditsRemaining !== 1 ? "s" : ""} remaining`;
   userCreditsEl.style.color = noCredits ? "#ef4444" : "#22c55e";
-  btnGenerate.disabled = false;
-  btnGenerate.title = noCredits ? "No credits — upgrade your plan to continue" : "";
+  btnGenerate.disabled = noCredits;
+  btnGenerate.title = noCredits ? "No credits — upgrade your plan" : "";
   btnDisconnect.style.display = "block";
   tokenSection.style.display = "none";
 }
@@ -61,10 +61,10 @@ chrome.runtime.sendMessage({ type: "FA_GET_STATUS" }, (response) => {
   }
 });
 
-// Generate Videos button
-btnGenerate.addEventListener("click", async () => {
+// Generate Videos button — inject & open Flow
+btnGenerate.addEventListener("click", () => {
   btnGenerate.disabled = true;
-  btnGenerate.textContent = "Injecting...";
+  btnGenerate.textContent = "Opening...";
 
   chrome.runtime.sendMessage({ type: "FA_INJECT" }, (response) => {
     if (chrome.runtime.lastError || !response?.success) {
@@ -73,8 +73,6 @@ btnGenerate.addEventListener("click", async () => {
       btnGenerate.textContent = "Generate Videos";
       return;
     }
-
-    // Open Google Flow in a new tab
     chrome.tabs.create({ url: FLOW_URL });
     window.close();
   });
@@ -84,34 +82,29 @@ btnGenerate.addEventListener("click", async () => {
 btnDisconnect.addEventListener("click", () => {
   chrome.runtime.sendMessage({ type: "FA_LOGOUT" }, () => {
     setDisconnected();
-    showMessage("Disconnected successfully", "success");
+    showMessage("Disconnected", "success");
   });
 });
 
-// Manual token connect
+// Manual token input
 btnConnect.addEventListener("click", () => {
   const token = tokenInput.value.trim();
-  if (!token) {
-    showMessage("Please enter an API token", "error");
-    return;
-  }
+  if (!token) { showMessage("Please enter your API token", "error"); return; }
 
-  // Get the API base from storage or use a default
-  chrome.storage.local.get("flowaccess_api_base", (result) => {
-    const apiBase = result.flowaccess_api_base || "";
-    chrome.runtime.sendMessage(
-      { type: "FA_AUTH_UPDATE", token, apiBase },
-      () => {
-        // Verify the token works
-        chrome.runtime.sendMessage({ type: "FA_GET_STATUS" }, (response) => {
-          if (response?.connected && response.user) {
-            setConnected(response.user);
-            showMessage("Connected successfully!", "success");
-          } else {
-            showMessage("Invalid token or API unavailable", "error");
-          }
-        });
-      }
-    );
+  chrome.runtime.sendMessage({ type: "FA_AUTH_UPDATE", token }, (response) => {
+    if (chrome.runtime.lastError || !response?.success) {
+      showMessage("Invalid token or connection error", "error");
+      return;
+    }
+    setConnected(response.user);
+    showMessage("Connected!", "success");
   });
 });
+
+// Visit FlowAccess site
+if (btnVisitSite) {
+  btnVisitSite.addEventListener("click", () => {
+    chrome.tabs.create({ url: SITE_URL });
+    window.close();
+  });
+}

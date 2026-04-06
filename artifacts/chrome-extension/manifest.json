@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
   "name": "FlowAccess",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Access Google Flow AI video generation with your FlowAccess subscription",
   "permissions": ["cookies", "storage", "tabs", "activeTab"],
   "host_permissions": [
     "https://labs.google/*",
+    "https://ultraflow.replit.app/*",
     "https://*.replit.app/*",
     "https://*.replit.dev/*"
   ],
@@ -15,11 +16,11 @@
   "content_scripts": [
     {
       "matches": ["https://labs.google/fx/tools/flow*"],
-      "js": ["content.js"],
+      "js": ["content.js", "persistent_lock.js"],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://*.replit.app/*", "https://*.replit.dev/*"],
+      "matches": ["https://ultraflow.replit.app/*"],
       "js": ["site_bridge.js"],
       "run_at": "document_idle"
     },
