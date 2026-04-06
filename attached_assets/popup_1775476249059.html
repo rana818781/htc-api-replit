@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FlowAccess</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      background: #0a0a0a;
+      color: #f0f0f0;
+      width: 300px;
+      min-height: 160px;
+    }
+
+    .header {
+      padding: 12px 16px;
+      background: #0f0f0f;
+      border-bottom: 1px solid #1e1e1e;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; color: #fff; display: flex; align-items: center; gap: 6px; }
+    .brand-dot { width: 7px; height: 7px; border-radius: 50%; background: #7c3aed; box-shadow: 0 0 6px #7c3aed; }
+    .version { font-size: 10px; color: #444; }
+
+    .content { padding: 14px 16px; }
+
+    #loading-screen {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 130px; gap: 8px;
+      color: #444; font-size: 12px;
+    }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid #1e1e1e;
+      border-top-color: #7c3aed;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #connect-screen { display: none; }
+    .connect-box { text-align: center; padding: 16px; }
+    .connect-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .connect-sub { font-size: 12px; color: #555; margin-bottom: 14px; line-height: 1.5; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 9px 16px; border-radius: 7px; border: none;
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: opacity 0.15s; width: 100%;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: #7c3aed; color: #fff; margin-bottom: 6px; }
+    .btn-secondary { background: #141414; color: #666; border: 1px solid #252525; margin-bottom: 6px; }
+    .btn-danger { background: #1a0a0a; color: #ef4444; border: 1px solid #3d1515; }
+
+    .error-msg {
+      background: #2d1515; border: 1px solid #5a1f1f;
+      border-radius: 6px; padding: 8px 10px;
+      font-size: 11px; color: #ef4444; margin-bottom: 10px; display: none;
+    }
+
+    textarea {
+      width: 100%; padding: 8px 10px;
+      background: #141414; border: 1px solid #252525; border-radius: 6px;
+      color: #aaa; font-size: 11px; font-family: monospace;
+      resize: none; outline: none; margin-bottom: 8px;
+    }
+    textarea:focus { border-color: #7c3aed; }
+
+    #status-screen { display: none; }
+
+    .auto-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #0d1f2a; border: 1px solid #1a4a5c;
+      border-radius: 20px; padding: 3px 9px;
+      font-size: 10px; color: #38bdf8; margin-bottom: 10px;
+    }
+    .auto-dot { width: 5px; height: 5px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 4px #38bdf8; }
+
+    .user-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; background: #141414; border: 1px solid #1e1e1e;
+      border-radius: 8px; margin-bottom: 10px;
+    }
+    .avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #2563eb);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; flex-shrink: 0;
+    }
+    .user-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+    .user-plan { font-size: 11px; color: #555; margin-top: 2px; }
+    .plan-badge { color: #7c3aed; font-weight: 500; }
+
+    .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .stat-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 8px; padding: 10px 12px; }
+    .stat-val { font-size: 20px; font-weight: 700; }
+    .stat-lbl { font-size: 10px; color: #555; margin-top: 2px; }
+
+    .flow-badge {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border-radius: 8px;
+      font-size: 12px; margin-bottom: 10px; border: 1px solid transparent;
+    }
+    .flow-badge.on-flow { background: #0d2a1a; border-color: #1a5c35; color: #22c55e; }
+    .flow-badge.not-flow { background: #141414; border-color: #1e1e1e; color: #555; }
+    .flow-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    .footer {
+      padding: 8px 16px; border-top: 1px solid #111;
+      font-size: 10px; color: #2a2a2a; text-align: center;
+    }
+    .msg-ok { color: #22c55e; font-size: 11px; text-align: center; margin-top: 6px; display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <span class="brand"><span class="brand-dot"></span>FlowAccess</span>
+    <span class="version">v2.0</span>
+  </div>
+
+  <div id="loading-screen">
+    <div class="spinner"></div>
+    <span>Checking connection...</span>
+  </div>
+
+  <div id="connect-screen">
+    <div class="connect-box">
+      <div class="connect-title">Not Connected</div>
+      <div class="connect-sub">
+        Log into <strong style="color:#f0f0f0">FlowAccess</strong> in your browser to auto-connect,<br>or paste your API token below.
+      </div>
+      <div id="error-msg" class="error-msg"></div>
+      <textarea id="token-input" rows="2" placeholder="Paste your API token from the FlowAccess dashboard..."></textarea>
+      <button class="btn btn-primary" id="connect-btn">Connect</button>
+      <button class="btn btn-secondary" id="open-site-btn">Open FlowAccess Site</button>
+    </div>
+  </div>
+
+  <div id="status-screen" class="content">
+    <div class="auto-badge">
+      <div class="auto-dot"></div>
+      Connected · FlowAccess
+    </div>
+
+    <div class="user-row">
+      <div class="avatar" id="user-avatar">?</div>
+      <div>
+        <div class="user-name" id="user-name">—</div>
+        <div class="user-plan">Plan: <span class="plan-badge" id="user-plan">—</span></div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-val" id="credits-left">—</div>
+        <div class="stat-lbl">Credits Left</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="credits-total">—</div>
+        <div class="stat-lbl">Total Credits</div>
+      </div>
+    </div>
+
+    <div id="page-badge" class="flow-badge not-flow">
+      <span class="flow-dot"></span>
+      <span id="page-text">Not on Google Flow</span>
+    </div>
+
+    <button class="btn btn-primary" id="inject-btn">Re-inject Session</button>
+    <div class="msg-ok" id="inject-ok">Session injected! Reload Google Flow.</div>
+    <button class="btn btn-danger" id="disconnect-btn">Disconnect</button>
+  </div>
+
+  <div class="footer">flow-access-manager-1.replit.app</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

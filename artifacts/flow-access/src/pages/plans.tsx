@@ -15,9 +15,9 @@ export default function Plans() {
   return (
     <div className="p-6 md:p-12 max-w-6xl mx-auto w-full">
       <div className="text-center max-w-2xl mx-auto mb-12">
-        <h1 className="text-4xl font-extrabold tracking-tight mb-4">সাবস্ক্রিপশন <span className="text-primary">প্ল্যানসমূহ</span></h1>
+        <h1 className="text-4xl font-extrabold tracking-tight mb-4">Subscription <span className="text-primary">Plans</span></h1>
         <p className="text-lg text-muted-foreground">
-          আপনার প্রয়োজনীয়তা অনুযায়ী সঠিক প্ল্যানটি বেছে নিন এবং আনলিমিটেড AI ভিডিও তৈরি শুরু করুন।
+          Choose the right plan for your needs and start creating unlimited AI videos.
         </p>
       </div>
 
@@ -46,7 +46,7 @@ export default function Plans() {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 items-start">
           {plans?.map((plan) => {
             const isCurrentPlan = currentUser?.planId === plan.id;
-            const isPopular = plan.creditsPerMonth > 100 && plan.creditsPerMonth < 1000; // Just some logic to highlight middle tier
+            const isPopular = plan.creditsPerMonth > 100 && plan.creditsPerMonth < 1000;
             
             return (
               <Card 
@@ -59,12 +59,12 @@ export default function Plans() {
               >
                 {isCurrentPlan && (
                   <div className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground text-center text-xs font-bold py-1 px-4">
-                    বর্তমান প্ল্যান
+                    Current Plan
                   </div>
                 )}
                 {isPopular && !isCurrentPlan && (
                   <div className="absolute top-0 left-0 right-0 bg-muted text-muted-foreground text-center text-xs font-bold py-1 px-4">
-                    জনপ্রিয়
+                    Popular
                   </div>
                 )}
                 
@@ -73,28 +73,28 @@ export default function Plans() {
                   <CardDescription className="min-h-[40px] text-sm mt-2">{plan.description}</CardDescription>
                   <div className="mt-4 flex items-baseline text-4xl font-extrabold">
                     ${plan.priceUsd}
-                    <span className="ml-1 text-sm font-medium text-muted-foreground">/মাস</span>
+                    <span className="ml-1 text-sm font-medium text-muted-foreground">/mo</span>
                   </div>
                 </CardHeader>
                 
                 <CardContent className="flex-1">
                   <div className="flex items-center gap-2 mb-6 p-3 rounded-lg bg-primary/5 border border-primary/10">
                     <Zap className="h-5 w-5 text-primary" />
-                    <span className="font-bold">{plan.creditsPerMonth} <span className="text-muted-foreground font-normal">ক্রেডিট/মাস</span></span>
+                    <span className="font-bold">{plan.creditsPerMonth} <span className="text-muted-foreground font-normal">credits/mo</span></span>
                   </div>
                   
                   <ul className="space-y-3 text-sm">
                     <li className="flex items-center gap-3">
                       <Check className="h-4 w-4 text-primary shrink-0" />
-                      <span>গুগল ফ্লো অ্যাক্সেস</span>
+                      <span>Google Flow Access</span>
                     </li>
                     <li className="flex items-center gap-3">
                       <Check className="h-4 w-4 text-primary shrink-0" />
-                      <span>ফুল HD রেজোলিউশন</span>
+                      <span>Full HD Resolution</span>
                     </li>
                     <li className="flex items-center gap-3">
                       <Check className="h-4 w-4 text-primary shrink-0" />
-                      <span>প্রাইওরিটি সাপোর্ট</span>
+                      <span>Priority Support</span>
                     </li>
                   </ul>
                 </CardContent>
@@ -102,15 +102,15 @@ export default function Plans() {
                 <CardFooter>
                   {!isSignedIn ? (
                     <Button asChild className="w-full" variant={isPopular ? "default" : "outline"} data-testid={`button-plan-signup-${plan.id}`}>
-                      <Link href="/sign-up">শুরু করুন</Link>
+                      <Link href="/sign-up">Get Started</Link>
                     </Button>
                   ) : isCurrentPlan ? (
                     <Button className="w-full" disabled variant="secondary">
-                      বর্তমান প্ল্যান
+                      Current Plan
                     </Button>
                   ) : (
                     <Button className="w-full" variant={isPopular ? "default" : "outline"} data-testid={`button-plan-select-${plan.id}`}>
-                      আপগ্রেড করুন
+                      Upgrade
                     </Button>
                   )}
                 </CardFooter>

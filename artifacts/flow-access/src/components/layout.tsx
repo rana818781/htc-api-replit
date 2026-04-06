@@ -15,9 +15,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const isAdmin = apiUser?.isAdmin === true;
 
   const navItems = [
-    { href: "/dashboard", label: "ড্যাশবোর্ড", icon: LayoutDashboard },
-    { href: "/plans", label: "প্ল্যানসমূহ", icon: CreditCard },
-    { href: "/usage", label: "ব্যবহার লগ", icon: Activity },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/plans", label: "Plans", icon: CreditCard },
+    { href: "/usage", label: "Usage Logs", icon: Activity },
   ];
 
   return (
@@ -55,7 +55,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>
                 <div className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors cursor-pointer ${location === "/admin" ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"}`}>
                   <ShieldAlert className="h-5 w-5" />
-                  <span>অ্যাডমিন প্যানেল</span>
+                  <span>Admin Panel</span>
                 </div>
               </Link>
             )}
@@ -73,7 +73,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
             <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground" onClick={() => signOut()}>
               <LogOut className="mr-2 h-4 w-4" />
-              লগ আউট
+              Sign Out
             </Button>
           </div>
         </aside>

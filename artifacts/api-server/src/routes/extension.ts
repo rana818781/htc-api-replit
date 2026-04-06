@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Response, type NextFunction } from "express";
 import { eq, asc, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db, usersTable, sessionsTable, usageLogsTable, apiTokensTable, plansTable } from "@workspace/db";
@@ -63,7 +63,31 @@ router.get("/extension/me", requireApiToken, async (req: AuthenticatedRequest, r
   });
 });
 
-router.post("/extension/inject", requireApiToken, async (req: AuthenticatedRequest, res): Promise<void> => {
+// Combined middleware: accepts either X-API-Token or Clerk JWT Bearer token
+async function requireAuthOrApiToken(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const apiTokenHeader = req.headers["x-api-token"] as string | undefined;
+  if (apiTokenHeader) {
+    return requireApiToken(req, res, next);
+  }
+  // Fall back to Clerk JWT
+  const { getAuth } = await import("@clerk/express");
+  const auth = getAuth(req);
+  if (!auth?.userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  req.clerkUserId = auth.userId;
+  const email = await resolveClerkEmail(req, auth.userId);
+  const user = await getOrCreateUser(auth.userId, email);
+  req.dbUser = user;
+  next();
+}
+
+router.post("/extension/inject", requireAuthOrApiToken, async (req: AuthenticatedRequest, res): Promise<void> => {
   const user = req.dbUser!;
 
   // Atomically deduct 1 credit using a conditional UPDATE.

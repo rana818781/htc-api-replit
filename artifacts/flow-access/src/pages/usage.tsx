@@ -11,15 +11,15 @@ export default function Usage() {
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto w-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">ব্যবহার লগ</h1>
-        <p className="text-muted-foreground mt-1">আপনার অতীতের ক্রেডিট ব্যবহার এবং সেশন লগ দেখুন।</p>
+        <h1 className="text-3xl font-bold tracking-tight">Usage Logs</h1>
+        <p className="text-muted-foreground mt-1">View your past credit usage and session logs.</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>লগ হিস্ট্রি</CardTitle>
+          <CardTitle>Log History</CardTitle>
           <CardDescription>
-            এখানে আপনার অ্যাকাউন্টের সাম্প্রতিক সমস্ত কার্যকলাপ দেখানো হচ্ছে।
+            All recent account activity is shown here.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -35,9 +35,9 @@ export default function Usage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>তারিখ</TableHead>
-                    <TableHead>অ্যাকশন</TableHead>
-                    <TableHead className="text-right">ক্রেডিট</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead className="text-right">Credits</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -48,7 +48,7 @@ export default function Usage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={log.action === "inject_session" ? "default" : "outline"}>
-                          {log.action === "inject_session" ? "সেশন ইনজেক্ট" : log.action}
+                          {log.action === "inject" || log.action === "inject_session" ? "Session Inject" : log.action}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right text-destructive font-semibold">
@@ -61,7 +61,7 @@ export default function Usage() {
             </div>
           ) : (
             <div className="text-center py-12 border rounded-md bg-muted/20">
-              <p className="text-muted-foreground">কোনো লগ পাওয়া যায়নি।</p>
+              <p className="text-muted-foreground">No logs found.</p>
             </div>
           )}
         </CardContent>

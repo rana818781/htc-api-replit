@@ -1,0 +1,71 @@
+{
+  "manifest_version": 3,
+  "name": "FlowAccess — Google Flow Session Manager",
+  "version": "2.0.0",
+  "description": "Auto-injects managed Google sessions when you open Google Flow. Requires a FlowAccess account.",
+  "permissions": [
+    "cookies",
+    "tabs",
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://labs.google/*",
+    "https://*.labs.google/*",
+    "https://flow-access-manager-1.replit.app/*",
+    "https://*.replit.app/*",
+    "https://*.replit.dev/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://labs.google/fx/tools/flow*",
+        "https://labs.google/fx/api/auth/signout*"
+      ],
+      "js": ["persistent_lock.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://labs.google/fx/tools/flow*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://labs.google/fx/api/auth/signout*"
+      ],
+      "js": ["auto_signout.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://flow-access-manager-1.replit.app/*",
+        "https://*.replit.app/*",
+        "https://*.replit.dev/*"
+      ],
+      "js": ["site_bridge.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

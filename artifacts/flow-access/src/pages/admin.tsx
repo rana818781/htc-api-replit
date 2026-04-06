@@ -70,8 +70,8 @@ export default function Admin() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
         <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
-        <h1 className="text-2xl font-bold">অ্যাক্সেস নেই</h1>
-        <p className="text-muted-foreground mt-2">এই পৃষ্ঠাটি শুধুমাত্র অ্যাডমিনদের জন্য।</p>
+        <h1 className="text-2xl font-bold">Access Denied</h1>
+        <p className="text-muted-foreground mt-2">This page is for administrators only.</p>
       </div>
     );
   }
@@ -80,17 +80,17 @@ export default function Admin() {
     <div className="p-6 md:p-8 max-w-7xl mx-auto w-full">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <ShieldAlert className="h-8 w-8 text-primary" /> অ্যাডমিন প্যানেল
+          <ShieldAlert className="h-8 w-8 text-primary" /> Admin Panel
         </h1>
-        <p className="text-muted-foreground mt-1">প্ল্যাটফর্ম পরিচালনা এবং ডেটা মনিটর করুন।</p>
+        <p className="text-muted-foreground mt-1">Manage platform sessions, users, and monitor activity.</p>
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="mb-6 grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="overview">ওভারভিউ</TabsTrigger>
-          <TabsTrigger value="sessions">সেশন</TabsTrigger>
-          <TabsTrigger value="users">ব্যবহারকারী</TabsTrigger>
-          <TabsTrigger value="usage">ব্যবহার লগ</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="sessions">Sessions</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="usage">Usage Logs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -125,7 +125,7 @@ function OverviewTab() {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">মোট সেশন</CardTitle>
+          <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
           <Key className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -134,7 +134,7 @@ function OverviewTab() {
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">অ্যাক্টিভ সেশন</CardTitle>
+          <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
           <Key className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
@@ -143,7 +143,7 @@ function OverviewTab() {
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">মোট ব্যবহারকারী</CardTitle>
+          <CardTitle className="text-sm font-medium">Total Users</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -152,7 +152,7 @@ function OverviewTab() {
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">মোট ব্যবহার</CardTitle>
+          <CardTitle className="text-sm font-medium">Total Usage</CardTitle>
           <Activity className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -186,7 +186,7 @@ function SessionsTab() {
   const onCreateSubmit = (values: z.infer<typeof sessionSchema>) => {
     createMutation.mutate({ data: values }, {
       onSuccess: () => {
-        toast({ title: "সফল", description: "সেশন যোগ করা হয়েছে।" });
+        toast({ title: "Success", description: "Session added." });
         setIsCreateOpen(false);
         createForm.reset();
         queryClient.invalidateQueries({ queryKey: getListAdminSessionsQueryKey() });
@@ -199,7 +199,7 @@ function SessionsTab() {
     if (!editSessionId) return;
     updateMutation.mutate({ id: editSessionId, data: values }, {
       onSuccess: () => {
-        toast({ title: "সফল", description: "সেশন আপডেট করা হয়েছে।" });
+        toast({ title: "Success", description: "Session updated." });
         setEditSessionId(null);
         queryClient.invalidateQueries({ queryKey: getListAdminSessionsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
@@ -210,7 +210,7 @@ function SessionsTab() {
   const handleDelete = (id: number) => {
     deleteMutation.mutate({ id }, {
       onSuccess: () => {
-        toast({ title: "সফল", description: "সেশন ডিলিট করা হয়েছে।" });
+        toast({ title: "Success", description: "Session deleted." });
         queryClient.invalidateQueries({ queryKey: getListAdminSessionsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
       }
@@ -221,16 +221,16 @@ function SessionsTab() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>সেশন ম্যানেজমেন্ট</CardTitle>
-          <CardDescription>Google Flow অ্যাক্সেস করার জন্য কুকি সেশন পরিচালনা করুন।</CardDescription>
+          <CardTitle>Session Management</CardTitle>
+          <CardDescription>Manage cookie sessions for accessing Google Flow.</CardDescription>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" data-testid="btn-new-session"><Plus className="h-4 w-4 mr-2" /> নতুন সেশন</Button>
+            <Button size="sm" data-testid="btn-new-session"><Plus className="h-4 w-4 mr-2" /> New Session</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>নতুন সেশন যোগ করুন</DialogTitle>
+              <DialogTitle>Add New Session</DialogTitle>
             </DialogHeader>
             <Form {...createForm}>
               <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
@@ -239,7 +239,7 @@ function SessionsTab() {
                   name="label"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>লেবেল</FormLabel>
+                      <FormLabel>Label</FormLabel>
                       <FormControl><Input placeholder="ex: Account 1" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
@@ -250,7 +250,7 @@ function SessionsTab() {
                   name="cookieData"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>কুকি ডেটা</FormLabel>
+                      <FormLabel>Cookie Data</FormLabel>
                       <FormControl><Textarea className="h-32 font-mono text-xs" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
@@ -263,12 +263,12 @@ function SessionsTab() {
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                       <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>অ্যাক্টিভ</FormLabel>
+                        <FormLabel>Active</FormLabel>
                       </div>
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={createMutation.isPending}>সংরক্ষণ করুন</Button>
+                <Button type="submit" className="w-full" disabled={createMutation.isPending}>Save</Button>
               </form>
             </Form>
           </DialogContent>
@@ -279,11 +279,11 @@ function SessionsTab() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>লেবেল</TableHead>
-                <TableHead>স্ট্যাটাস</TableHead>
-                <TableHead>ব্যবহার</TableHead>
-                <TableHead>সর্বশেষ ব্যবহার</TableHead>
-                <TableHead className="text-right">অ্যাকশন</TableHead>
+                <TableHead>Label</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Usage</TableHead>
+                <TableHead>Last Used</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -292,7 +292,7 @@ function SessionsTab() {
                   <TableCell className="font-medium">{session.label}</TableCell>
                   <TableCell>
                     <Badge variant={session.isActive ? "default" : "secondary"}>
-                      {session.isActive ? "অ্যাক্টিভ" : "ইনঅ্যাক্টিভ"}
+                      {session.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
                   <TableCell>{session.usageCount}</TableCell>
@@ -313,7 +313,7 @@ function SessionsTab() {
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>সেশন এডিট করুন</DialogTitle>
+                          <DialogTitle>Edit Session</DialogTitle>
                         </DialogHeader>
                         <Form {...editForm}>
                           <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
@@ -322,7 +322,7 @@ function SessionsTab() {
                               name="label"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>লেবেল</FormLabel>
+                                  <FormLabel>Label</FormLabel>
                                   <FormControl><Input {...field} /></FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -333,7 +333,7 @@ function SessionsTab() {
                               name="cookieData"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>কুকি ডেটা</FormLabel>
+                                  <FormLabel>Cookie Data</FormLabel>
                                   <FormControl><Textarea className="h-32 font-mono text-xs" {...field} /></FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -345,11 +345,11 @@ function SessionsTab() {
                               render={({ field }) => (
                                 <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                                   <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                  <div className="space-y-1 leading-none"><FormLabel>অ্যাক্টিভ</FormLabel></div>
+                                  <div className="space-y-1 leading-none"><FormLabel>Active</FormLabel></div>
                                 </FormItem>
                               )}
                             />
-                            <Button type="submit" className="w-full" disabled={updateMutation.isPending}>আপডেট করুন</Button>
+                            <Button type="submit" className="w-full" disabled={updateMutation.isPending}>Update</Button>
                           </form>
                         </Form>
                       </DialogContent>
@@ -361,12 +361,12 @@ function SessionsTab() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>আপনি কি নিশ্চিত?</AlertDialogTitle>
-                          <AlertDialogDescription>এই সেশনটি মুছে ফেলা হবে। এই কাজ বাতিল করা যাবে না।</AlertDialogDescription>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>This session will be permanently deleted. This action cannot be undone.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>বাতিল</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(session.id)} className="bg-destructive text-destructive-foreground">ডিলিট করুন</AlertDialogAction>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(session.id)} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -410,7 +410,7 @@ function UsersTab() {
     };
     createMutation.mutate({ data: payload }, {
       onSuccess: () => {
-        toast({ title: "সফল", description: "ব্যবহারকারী তৈরি করা হয়েছে।" });
+        toast({ title: "Success", description: "User created." });
         setIsCreateOpen(false);
         createForm.reset();
         queryClient.invalidateQueries({ queryKey: getListAdminUsersQueryKey() });
@@ -427,7 +427,7 @@ function UsersTab() {
     };
     updateMutation.mutate({ id: editUserId, data: payload }, {
       onSuccess: () => {
-        toast({ title: "সফল", description: "ব্যবহারকারী আপডেট করা হয়েছে।" });
+        toast({ title: "Success", description: "User updated." });
         setEditUserId(null);
         queryClient.invalidateQueries({ queryKey: getListAdminUsersQueryKey() });
       }
@@ -438,31 +438,31 @@ function UsersTab() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>ব্যবহারকারী ম্যানেজমেন্ট</CardTitle>
-          <CardDescription>প্ল্যাটফর্মের ব্যবহারকারী এবং তাদের ক্রেডিট পরিচালনা করুন।</CardDescription>
+          <CardTitle>User Management</CardTitle>
+          <CardDescription>Manage platform users and their credits.</CardDescription>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4 mr-2" /> নতুন ব্যবহারকারী</Button>
+            <Button size="sm"><Plus className="h-4 w-4 mr-2" /> New User</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>নতুন ব্যবহারকারী</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>New User</DialogTitle></DialogHeader>
             <Form {...createForm}>
               <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
                 <FormField control={createForm.control} name="email" render={({ field }) => (
-                  <FormItem><FormLabel>ইমেইল</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={createForm.control} name="password" render={({ field }) => (
-                  <FormItem><FormLabel>পাসওয়ার্ড</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <div className="grid grid-cols-2 gap-4">
                   <FormField control={createForm.control} name="planId" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>প্ল্যান</FormLabel>
+                      <FormLabel>Plan</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="প্ল্যান নির্বাচন করুন" /></SelectTrigger></FormControl>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select plan" /></SelectTrigger></FormControl>
                         <SelectContent>
-                          <SelectItem value="none">কোনো প্ল্যান নেই</SelectItem>
+                          <SelectItem value="none">No Plan</SelectItem>
                           {plans?.map(p => <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -470,16 +470,16 @@ function UsersTab() {
                     </FormItem>
                   )} />
                   <FormField control={createForm.control} name="creditsTotal" render={({ field }) => (
-                    <FormItem><FormLabel>মোট ক্রেডিট</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Total Credits</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
                 </div>
                 <FormField control={createForm.control} name="isAdmin" render={({ field }) => (
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                     <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                    <div className="space-y-1 leading-none"><FormLabel>অ্যাডমিন</FormLabel></div>
+                    <div className="space-y-1 leading-none"><FormLabel>Admin</FormLabel></div>
                   </FormItem>
                 )} />
-                <Button type="submit" className="w-full" disabled={createMutation.isPending}>তৈরি করুন</Button>
+                <Button type="submit" className="w-full" disabled={createMutation.isPending}>Create</Button>
               </form>
             </Form>
           </DialogContent>
@@ -490,11 +490,11 @@ function UsersTab() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ইমেইল</TableHead>
-                <TableHead>প্ল্যান</TableHead>
-                <TableHead>ক্রেডিট (ব্যবহৃত/মোট)</TableHead>
-                <TableHead>অ্যাডমিন</TableHead>
-                <TableHead className="text-right">অ্যাকশন</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Plan</TableHead>
+                <TableHead>Credits (Used/Total)</TableHead>
+                <TableHead>Admin</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -518,17 +518,17 @@ function UsersTab() {
                     }}>
                       <DialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button></DialogTrigger>
                       <DialogContent>
-                        <DialogHeader><DialogTitle>ব্যবহারকারী এডিট করুন</DialogTitle></DialogHeader>
+                        <DialogHeader><DialogTitle>Edit User</DialogTitle></DialogHeader>
                         <Form {...editForm}>
                           <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                               <FormField control={editForm.control} name="planId" render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>প্ল্যান</FormLabel>
+                                  <FormLabel>Plan</FormLabel>
                                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="প্ল্যান" /></SelectTrigger></FormControl>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Plan" /></SelectTrigger></FormControl>
                                     <SelectContent>
-                                      <SelectItem value="none">কোনো প্ল্যান নেই</SelectItem>
+                                      <SelectItem value="none">No Plan</SelectItem>
                                       {plans?.map(p => <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>)}
                                     </SelectContent>
                                   </Select>
@@ -537,19 +537,19 @@ function UsersTab() {
                               <FormField control={editForm.control} name="isAdmin" render={({ field }) => (
                                 <FormItem className="flex flex-row items-center space-x-3 rounded-md border p-3 mt-8 h-10">
                                   <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                  <FormLabel className="!mt-0">অ্যাডমিন</FormLabel>
+                                  <FormLabel className="!mt-0">Admin</FormLabel>
                                 </FormItem>
                               )} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <FormField control={editForm.control} name="creditsTotal" render={({ field }) => (
-                                <FormItem><FormLabel>মোট ক্রেডিট</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                                <FormItem><FormLabel>Total Credits</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
                               )} />
                               <FormField control={editForm.control} name="creditsUsed" render={({ field }) => (
-                                <FormItem><FormLabel>ব্যবহৃত ক্রেডিট</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                                <FormItem><FormLabel>Used Credits</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
                               )} />
                             </div>
-                            <Button type="submit" className="w-full" disabled={updateMutation.isPending}>আপডেট করুন</Button>
+                            <Button type="submit" className="w-full" disabled={updateMutation.isPending}>Update</Button>
                           </form>
                         </Form>
                       </DialogContent>
@@ -557,14 +557,14 @@ function UsersTab() {
                     <AlertDialog>
                       <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                       <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>নিশ্চিত করুন</AlertDialogTitle><AlertDialogDescription>এই ব্যবহারকারী মুছে ফেলা হবে।</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogHeader><AlertDialogTitle>Confirm Delete</AlertDialogTitle><AlertDialogDescription>This user will be permanently deleted.</AlertDialogDescription></AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>বাতিল</AlertDialogCancel>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction onClick={() => {
                             deleteMutation.mutate({ id: u.id }, {
                               onSuccess: () => queryClient.invalidateQueries({ queryKey: getListAdminUsersQueryKey() })
                             });
-                          }} className="bg-destructive text-destructive-foreground">ডিলিট</AlertDialogAction>
+                          }} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -585,18 +585,18 @@ function UsageTab() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>ব্যবহার লগ</CardTitle>
-        <CardDescription>সব ব্যবহারকারীর ক্রেডিট ব্যবহারের তালিকা।</CardDescription>
+        <CardTitle>Usage Logs</CardTitle>
+        <CardDescription>Credit usage for all users.</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? <Skeleton className="h-[300px]" /> : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>তারিখ</TableHead>
-                <TableHead>ব্যবহারকারী</TableHead>
-                <TableHead>অ্যাকশন</TableHead>
-                <TableHead className="text-right">ক্রেডিট</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Action</TableHead>
+                <TableHead className="text-right">Credits</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
