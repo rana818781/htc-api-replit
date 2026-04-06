@@ -1,125 +1,94 @@
-// FlowAccess — Project Filter v9.0
-// Uses CSS injection (not inline styles) so React re-renders can't undo hiding.
-// DOM (confirmed):
-//   button.jsIRVP parent = div.iBXxRU [2 kids: div.bpmHSr + button]
-//   Section level = 4 kids (header, hero, project-grid, ?)
-//   Page level = 26 kids
+// FlowAccess — Project Filter v10
+// Uses direct inline styles (confirmed working via manual console test).
+// Patrols continuously to re-hide if React re-renders.
 
 (function () {
   "use strict";
 
-  let styleInjected = false;
-  let tilesDone = false;
-  let heroDone = false;
+  console.log("[FlowAccess] project_filter.js loaded");
 
-  function injectCSS() {
-    if (styleInjected) return;
-    const s = document.createElement("style");
-    s.id = "fa-filter-css";
-    s.textContent = "[data-fa-hidden] { display: none !important; visibility: hidden !important; }";
-    document.head.appendChild(s);
-    styleInjected = true;
-  }
-
-  function run() {
-    if (tilesDone && heroDone) return;
-
-    injectCSS();
-
-    let newBtn = null;
+  function findNewProjectButton() {
     for (const btn of document.querySelectorAll("button")) {
       const t = (btn.textContent || "").trim();
-      if (/new project/i.test(t) && t.length < 40) {
-        newBtn = btn;
-        break;
-      }
+      if (/new project/i.test(t) && t.length < 40) return btn;
     }
-    if (!newBtn) return;
-
-    // ── Step 1: Hide the project list (sibling of button) ─────────────────────
-    if (!tilesDone) {
-      const btnParent = newBtn.parentElement;
-      if (btnParent) {
-        let hid = 0;
-        for (const child of btnParent.children) {
-          if (child === newBtn) continue;
-          if (child.tagName === "BUTTON") continue;
-          if (!child.hasAttribute("data-fa-hidden")) {
-            child.setAttribute("data-fa-hidden", "tiles");
-            hid++;
-          }
-        }
-        if (hid > 0) {
-          console.log("[FlowAccess] Hid project list (" + hid + " element(s))");
-          tilesDone = true;
-        }
-      }
-    }
-
-    // ── Step 2: Hide the hero banner at section level ─────────────────────────
-    if (!heroDone) {
-      let el = newBtn;
-      for (let i = 0; i < 8; i++) {
-        el = el.parentElement;
-        if (!el || el === document.body) break;
-
-        const sectionParent = el.parentElement;
-        if (!sectionParent) break;
-
-        const count = sectionParent.children.length;
-        if (count < 3 || count > 6) continue;
-
-        const kids = Array.from(sectionParent.children);
-
-        let headerEl = null;
-        let minTop = Infinity;
-        for (const kid of kids) {
-          const r = kid.getBoundingClientRect();
-          if (r.height < 5 || r.width < 50) continue;
-          if (r.top < minTop) {
-            minTop = r.top;
-            headerEl = kid;
-          }
-        }
-
-        let hid = 0;
-        for (const kid of kids) {
-          if (kid === el) continue;
-          if (kid.contains(newBtn)) continue;
-          if (kid === headerEl) continue;
-          if (!kid.hasAttribute("data-fa-hidden")) {
-            kid.setAttribute("data-fa-hidden", "hero");
-            hid++;
-          }
-        }
-        if (hid > 0) {
-          console.log("[FlowAccess] Hid " + hid + " section(s) (hero/banner)");
-          heroDone = true;
-        }
-        break;
-      }
-    }
+    return null;
   }
 
-  // Re-apply hiding if React removes data-fa-hidden attributes
+  function hideTiles() {
+    const btn = findNewProjectButton();
+    if (!btn) return false;
+
+    const parent = btn.parentElement;
+    if (!parent) return false;
+
+    let hid = 0;
+    for (const child of parent.children) {
+      if (child === btn) continue;
+      if (child.style.display === "none") continue;
+      child.style.setProperty("display", "none", "important");
+      hid++;
+    }
+
+    if (hid > 0) console.log("[FlowAccess] Hid " + hid + " project list element(s)");
+    return hid > 0;
+  }
+
+  function hideHero() {
+    const btn = findNewProjectButton();
+    if (!btn) return false;
+
+    let el = btn;
+    for (let i = 0; i < 8; i++) {
+      el = el.parentElement;
+      if (!el || el === document.body) break;
+
+      const sectionParent = el.parentElement;
+      if (!sectionParent) break;
+      const count = sectionParent.children.length;
+      if (count < 3 || count > 6) continue;
+
+      const kids = Array.from(sectionParent.children);
+
+      let headerEl = null;
+      let minTop = Infinity;
+      for (const kid of kids) {
+        const r = kid.getBoundingClientRect();
+        if (r.height < 5 || r.width < 50) continue;
+        if (r.top < minTop) {
+          minTop = r.top;
+          headerEl = kid;
+        }
+      }
+
+      let hid = 0;
+      for (const kid of kids) {
+        if (kid === el || kid.contains(btn)) continue;
+        if (kid === headerEl) continue;
+        if (kid.style.display === "none") continue;
+        kid.style.setProperty("display", "none", "important");
+        hid++;
+      }
+
+      if (hid > 0) console.log("[FlowAccess] Hid " + hid + " hero/banner section(s)");
+      return hid > 0;
+    }
+    return false;
+  }
+
   function patrol() {
-    if (!document.getElementById("fa-filter-css")) {
-      styleInjected = false;
-      injectCSS();
-    }
-    const marked = document.querySelectorAll("[data-fa-hidden]");
-    if (marked.length === 0 && (tilesDone || heroDone)) {
-      tilesDone = false;
-      heroDone = false;
-    }
-    if (!tilesDone || !heroDone) run();
+    hideTiles();
+    hideHero();
   }
 
   const obs = new MutationObserver(patrol);
 
   function start() {
+    console.log("[FlowAccess] project_filter starting patrol");
     obs.observe(document.body, { childList: true, subtree: true });
-    [300, 700, 1200, 2000, 4000, 8000].forEach(ms => setTimeout(patrol, ms));
+    [300, 600, 1000, 1500, 2500, 4000, 7000, 12000].forEach(ms =>
+      setTimeout(patrol, ms)
+    );
   }
 
   if (document.readyState === "loading") {
