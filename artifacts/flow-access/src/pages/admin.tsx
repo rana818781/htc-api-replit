@@ -40,9 +40,24 @@ import { ShieldAlert, Users, Key, Activity, Plus, Edit, Trash2 } from "lucide-re
 
 const sessionSchema = z.object({
   label: z.string().min(1, "Label is required"),
-  cookieData: z.string().min(1, "Cookie data is required"),
+  cookieData: z.string().min(1, "Cookie data is required").refine((val) => {
+    try { const p = JSON.parse(val); return Array.isArray(p) && p.length > 0; } catch { return false; }
+  }, "Must be a valid JSON array (export from EditThisCookie or Cookie-Editor)"),
   isActive: z.boolean().default(true),
 });
+
+function extractEmailFromCookies(cookieData: string): string {
+  try {
+    const cookies = JSON.parse(cookieData) as Array<{ name: string; value: string }>;
+    const emailCookie = cookies.find(c => c.name === "EMAIL" || c.name === "email");
+    if (emailCookie?.value) return decodeURIComponent(emailCookie.value).replace(/^"|"$/g, "");
+  } catch {}
+  return "";
+}
+
+function parseCookieCount(cookieData: string): number {
+  try { return JSON.parse(cookieData).length; } catch { return 0; }
+}
 
 const userSchema = z.object({
   email: z.string().email("Invalid email"),
@@ -163,6 +178,74 @@ function OverviewTab() {
   );
 }
 
+function SessionForm({ form, onSubmit, isPending, submitLabel }: {
+  form: ReturnType<typeof useForm<z.infer<typeof sessionSchema>>>;
+  onSubmit: (v: z.infer<typeof sessionSchema>) => void;
+  isPending: boolean;
+  submitLabel: string;
+}) {
+  const cookieData = form.watch("cookieData");
+  const detectedEmail = cookieData ? extractEmailFromCookies(cookieData) : "";
+  const cookieCount = cookieData ? parseCookieCount(cookieData) : 0;
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField control={form.control} name="label" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Session Label</FormLabel>
+            <FormControl><Input placeholder="e.g. Account 1 - rana@veo.gemisubex.com" {...field} /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="cookieData" render={({ field }) => (
+          <FormItem>
+            <FormLabel className="flex items-center justify-between">
+              <span>Cookie Data (JSON)</span>
+              {cookieCount > 0 && (
+                <span className="text-xs font-normal text-muted-foreground">
+                  {cookieCount} cookies detected {detectedEmail && `· ${detectedEmail}`}
+                </span>
+              )}
+            </FormLabel>
+            <FormControl>
+              <Textarea
+                className="h-48 font-mono text-xs"
+                placeholder={'[\n  {\n    "domain": "labs.google",\n    "name": "__Secure-next-auth.session-token",\n    "value": "...",\n    "httpOnly": true,\n    "secure": true,\n    "session": false\n  }\n]'}
+                {...field}
+              />
+            </FormControl>
+            <FormDescription className="text-xs">
+              Paste the full JSON array exported from <strong>EditThisCookie</strong> or <strong>Cookie-Editor</strong> extension on labs.google.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        {detectedEmail && (
+          <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+            <Key className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-muted-foreground">Account:</span>
+            <span className="font-medium">{detectedEmail}</span>
+          </div>
+        )}
+
+        <FormField control={form.control} name="isActive" render={({ field }) => (
+          <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3">
+            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+            <div className="space-y-1 leading-none">
+              <FormLabel className="cursor-pointer">Active (users will be assigned this session)</FormLabel>
+            </div>
+          </FormItem>
+        )} />
+
+        <Button type="submit" className="w-full" disabled={isPending}>{submitLabel}</Button>
+      </form>
+    </Form>
+  );
+}
+
 function SessionsTab() {
   const { data: sessions, isLoading } = useListAdminSessions();
   const { toast } = useToast();
@@ -181,17 +264,19 @@ function SessionsTab() {
 
   const editForm = useForm<z.infer<typeof sessionSchema>>({
     resolver: zodResolver(sessionSchema),
+    defaultValues: { label: "", cookieData: "", isActive: true },
   });
 
   const onCreateSubmit = (values: z.infer<typeof sessionSchema>) => {
     createMutation.mutate({ data: values }, {
       onSuccess: () => {
-        toast({ title: "Success", description: "Session added." });
+        toast({ title: "Session Added", description: `"${values.label}" is now active.` });
         setIsCreateOpen(false);
         createForm.reset();
         queryClient.invalidateQueries({ queryKey: getListAdminSessionsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
-      }
+      },
+      onError: () => toast({ title: "Error", description: "Failed to add session.", variant: "destructive" }),
     });
   };
 
@@ -199,18 +284,28 @@ function SessionsTab() {
     if (!editSessionId) return;
     updateMutation.mutate({ id: editSessionId, data: values }, {
       onSuccess: () => {
-        toast({ title: "Success", description: "Session updated." });
+        toast({ title: "Session Updated" });
         setEditSessionId(null);
         queryClient.invalidateQueries({ queryKey: getListAdminSessionsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
-      }
+      },
+      onError: () => toast({ title: "Error", description: "Failed to update session.", variant: "destructive" }),
     });
   };
 
   const handleDelete = (id: number) => {
     deleteMutation.mutate({ id }, {
       onSuccess: () => {
-        toast({ title: "Success", description: "Session deleted." });
+        toast({ title: "Session Deleted" });
+        queryClient.invalidateQueries({ queryKey: getListAdminSessionsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
+      }
+    });
+  };
+
+  const handleToggleActive = (session: { id: number; label: string; cookieData: string; isActive: boolean }) => {
+    updateMutation.mutate({ id: session.id, data: { ...session, isActive: !session.isActive } }, {
+      onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListAdminSessionsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
       }
@@ -221,160 +316,121 @@ function SessionsTab() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Session Management</CardTitle>
-          <CardDescription>Manage cookie sessions for accessing Google Flow.</CardDescription>
+          <CardTitle>Google Session Management</CardTitle>
+          <CardDescription>
+            Add labs.google session cookies so users can access Google Flow AI. Export cookies using <strong>EditThisCookie</strong> or <strong>Cookie-Editor</strong>.
+          </CardDescription>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) createForm.reset(); }}>
           <DialogTrigger asChild>
-            <Button size="sm" data-testid="btn-new-session"><Plus className="h-4 w-4 mr-2" /> New Session</Button>
+            <Button size="sm" data-testid="btn-new-session"><Plus className="h-4 w-4 mr-2" /> Add Session</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-xl">
             <DialogHeader>
-              <DialogTitle>Add New Session</DialogTitle>
+              <DialogTitle>Add New Google Session</DialogTitle>
+              <DialogDescription>
+                Log in to <strong>labs.google/fx/tools/flow</strong>, export all cookies as JSON, then paste below.
+              </DialogDescription>
             </DialogHeader>
-            <Form {...createForm}>
-              <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
-                <FormField
-                  control={createForm.control}
-                  name="label"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Label</FormLabel>
-                      <FormControl><Input placeholder="ex: Account 1" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={createForm.control}
-                  name="cookieData"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cookie Data</FormLabel>
-                      <FormControl><Textarea className="h-32 font-mono text-xs" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={createForm.control}
-                  name="isActive"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                      <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Active</FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full" disabled={createMutation.isPending}>Save</Button>
-              </form>
-            </Form>
+            <SessionForm form={createForm} onSubmit={onCreateSubmit} isPending={createMutation.isPending} submitLabel="Add Session" />
           </DialogContent>
         </Dialog>
       </CardHeader>
       <CardContent>
         {isLoading ? <Skeleton className="h-[300px] w-full" /> : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Label</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Usage</TableHead>
-                <TableHead>Last Used</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sessions?.map(session => (
-                <TableRow key={session.id}>
-                  <TableCell className="font-medium">{session.label}</TableCell>
-                  <TableCell>
-                    <Badge variant={session.isActive ? "default" : "secondary"}>
-                      {session.isActive ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{session.usageCount}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {session.lastUsedAt ? format(new Date(session.lastUsedAt), "dd MMM, h:mm a") : "-"}
-                  </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Dialog open={editSessionId === session.id} onOpenChange={(open) => {
-                      if(open) {
-                        editForm.reset({ label: session.label, cookieData: session.cookieData, isActive: session.isActive });
-                        setEditSessionId(session.id);
-                      } else {
-                        setEditSessionId(null);
-                      }
-                    }}>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit Session</DialogTitle>
-                        </DialogHeader>
-                        <Form {...editForm}>
-                          <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
-                            <FormField
-                              control={editForm.control}
-                              name="label"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Label</FormLabel>
-                                  <FormControl><Input {...field} /></FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={editForm.control}
-                              name="cookieData"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Cookie Data</FormLabel>
-                                  <FormControl><Textarea className="h-32 font-mono text-xs" {...field} /></FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={editForm.control}
-                              name="isActive"
-                              render={({ field }) => (
-                                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                  <div className="space-y-1 leading-none"><FormLabel>Active</FormLabel></div>
-                                </FormItem>
-                              )}
-                            />
-                            <Button type="submit" className="w-full" disabled={updateMutation.isPending}>Update</Button>
-                          </form>
-                        </Form>
-                      </DialogContent>
-                    </Dialog>
+          <>
+            {(!sessions || sessions.length === 0) && (
+              <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground gap-3">
+                <Key className="h-12 w-12 opacity-20" />
+                <p className="text-sm">No sessions yet. Add a Google session to get started.</p>
+              </div>
+            )}
+            {sessions && sessions.length > 0 && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Label / Account</TableHead>
+                    <TableHead>Cookies</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Usage</TableHead>
+                    <TableHead>Last Used</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sessions.map(session => {
+                    const email = extractEmailFromCookies(session.cookieData);
+                    const count = parseCookieCount(session.cookieData);
+                    return (
+                      <TableRow key={session.id}>
+                        <TableCell>
+                          <div className="font-medium">{session.label}</div>
+                          {email && <div className="text-xs text-muted-foreground mt-0.5">{email}</div>}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="font-mono text-xs">{count}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <button
+                            onClick={() => handleToggleActive(session)}
+                            className="cursor-pointer"
+                            title={session.isActive ? "Click to deactivate" : "Click to activate"}
+                          >
+                            <Badge variant={session.isActive ? "default" : "secondary"}>
+                              {session.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-sm">{session.usageCount}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {session.lastUsedAt ? format(new Date(session.lastUsedAt), "dd MMM, h:mm a") : "Never"}
+                        </TableCell>
+                        <TableCell className="text-right space-x-1">
+                          <Dialog open={editSessionId === session.id} onOpenChange={(open) => {
+                            if (open) {
+                              editForm.reset({ label: session.label, cookieData: session.cookieData, isActive: session.isActive });
+                              setEditSessionId(session.id);
+                            } else {
+                              setEditSessionId(null);
+                            }
+                          }}>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-xl">
+                              <DialogHeader>
+                                <DialogTitle>Edit Session</DialogTitle>
+                                <DialogDescription>Update cookie data or label for this session.</DialogDescription>
+                              </DialogHeader>
+                              <SessionForm form={editForm} onSubmit={onEditSubmit} isPending={updateMutation.isPending} submitLabel="Update Session" />
+                            </DialogContent>
+                          </Dialog>
 
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>This session will be permanently deleted. This action cannot be undone.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(session.id)} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete "{session.label}"?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This session will be permanently removed. Users assigned to it will lose access until a new session is available.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(session.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

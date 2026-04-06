@@ -60,20 +60,35 @@ async function fetchAndInject(token, tabId) {
 
   // Inject each cookie into labs.google
   for (const cookie of cookies) {
-    await chrome.cookies
-      .set({
-        url: "https://labs.google",
-        name: cookie.name,
-        value: cookie.value,
-        domain: cookie.domain || ".labs.google",
-        path: cookie.path || "/",
-        secure: cookie.secure !== false,
-        sameSite: cookie.sameSite || "no_restriction",
-        expirationDate:
-          cookie.expirationDate ||
-          Math.floor(Date.now() / 1000) + 86400 * 7,
-      })
-      .catch(() => {});
+    // Build the URL for setting cookies
+    const rawDomain = cookie.domain || "labs.google";
+    const cleanDomain = rawDomain.startsWith(".") ? rawDomain.slice(1) : rawDomain;
+    const cookieUrl = cookie.secure ? `https://${cleanDomain}` : `http://${cleanDomain}`;
+
+    const details = {
+      url: cookieUrl,
+      name: cookie.name,
+      value: cookie.value,
+      domain: rawDomain,
+      path: cookie.path || "/",
+      secure: cookie.secure === true,
+      httpOnly: cookie.httpOnly === true,
+    };
+
+    // sameSite: null means "no_restriction" in Chrome extension API
+    if (cookie.sameSite === "lax") details.sameSite = "lax";
+    else if (cookie.sameSite === "strict") details.sameSite = "strict";
+    else details.sameSite = "no_restriction";
+
+    // Only set expirationDate for persistent cookies (session: false)
+    // Session cookies must NOT have an expirationDate
+    if (!cookie.session && cookie.expirationDate) {
+      details.expirationDate = Math.floor(cookie.expirationDate);
+    }
+
+    await chrome.cookies.set(details).catch((err) => {
+      console.warn(`[FlowAccess] Failed to set cookie ${cookie.name}:`, err);
+    });
   }
 
   // Update cached user credits
