@@ -1,86 +1,87 @@
-// FlowAccess — Project Filter v4.0
-// Hides ONLY the project history tiles. Uses rendered dimensions to avoid
-// accidentally hiding the hero banner, header, or any other page section.
+// FlowAccess — Project Filter v5.0
+// Hides old project tiles AND the hero/announcement banner.
+// Keeps: top header bar + "+ New project" button.
 
 (function () {
   "use strict";
 
   let done = false;
 
-  function hideProjectCards() {
+  function run() {
     if (done) return;
 
-    // ── Step 1: find the "+ New project" tile by text + rendered size ──────
-    let newProjTile = null;
+    const viewW = window.innerWidth || document.documentElement.clientWidth;
 
-    const candidates = document.querySelectorAll("div, li, article, section, a, button");
-    for (const el of candidates) {
+    // ── 1. Find the "+ New project" tile ─────────────────────────────────────
+    let newTile = null;
+    for (const el of document.querySelectorAll("div,li,article,button,a")) {
       const text = (el.textContent || "").trim();
-      if (!/new project/i.test(text)) continue;
-      if (text.length > 60) continue; // Must be short (just the button text)
-
-      const rect = el.getBoundingClientRect();
-      if (rect.width < 80 || rect.height < 80) continue; // Must have visible size
-
-      newProjTile = el;
-      break;
+      if (!/new project/i.test(text) || text.length > 60) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width > 80 && r.height > 80) { newTile = el; break; }
     }
+    if (!newTile) return; // Not rendered yet
 
-    if (!newProjTile) return; // Not loaded yet
+    const tileW = newTile.getBoundingClientRect().width;
+    const tileH = newTile.getBoundingClientRect().height;
 
-    const tileW = newProjTile.getBoundingClientRect().width;
-    const tileH = newProjTile.getBoundingClientRect().height;
+    // ── 2. Walk up to find the project grid row ───────────────────────────────
+    // The grid row is the ancestor whose children have ~same size as the tile.
+    let gridRow = null;
+    let probe = newTile.parentElement;
 
-    // ── Step 2: walk UP until we find the grid where siblings have the
-    //    same dimensions as the New Project tile ──────────────────────────────
-    let grid = newProjTile.parentElement;
-
-    while (grid && grid !== document.body) {
-      const children = Array.from(grid.children);
-
-      // Find siblings that have ~same width & height as the New Project tile
-      const projectSiblings = children.filter((c) => {
-        if (c === newProjTile || c.contains(newProjTile)) return false;
-        if (/new project/i.test((c.textContent || "").trim())) return false;
-        const r = c.getBoundingClientRect();
-        if (r.width < 60 || r.height < 60) return false;
-
-        const wDiff = Math.abs(r.width - tileW) / tileW;
-        const hDiff = Math.abs(r.height - tileH) / tileH;
-        return wDiff < 0.4 && hDiff < 0.4; // within 40% of tile size
+    while (probe && probe !== document.body) {
+      const kids = Array.from(probe.children);
+      const sameSized = kids.filter(k => {
+        if (k === newTile || k.contains(newTile)) return false;
+        const r = k.getBoundingClientRect();
+        return r.width > 60 && r.height > 60
+          && Math.abs(r.width  - tileW) / tileW < 0.45
+          && Math.abs(r.height - tileH) / tileH < 0.45;
       });
 
-      if (projectSiblings.length >= 1) {
-        // ✓ Found the project grid — hide ONLY the history tiles
-        for (const sib of projectSiblings) {
-          sib.style.setProperty("display", "none", "important");
-          sib.setAttribute("data-fa-hidden", "1");
+      if (sameSized.length >= 1) {
+        gridRow = probe;
+        // Hide old project tiles
+        for (const s of sameSized) {
+          s.style.setProperty("display", "none", "important");
+          s.setAttribute("data-fa-hidden", "project");
         }
-        console.log(`[FlowAccess] Hid ${projectSiblings.length} old project tile(s)`);
-        done = true;
-        return;
+        console.log(`[FlowAccess] Hid ${sameSized.length} old project tile(s)`);
+        break;
       }
-
-      grid = grid.parentElement;
+      probe = probe.parentElement;
     }
+
+    // ── 3. Hide the hero/announcement banner ─────────────────────────────────
+    // The banner is a full-width (>50% viewport) tall (>120px) block that is
+    // NOT the header (header is short, <80px usually) and NOT the project grid.
+    const searchRoot = gridRow ? gridRow.parentElement : document.body;
+    if (searchRoot) {
+      for (const sibling of searchRoot.children) {
+        if (gridRow && (sibling === gridRow || sibling.contains(gridRow))) continue;
+
+        const r = sibling.getBoundingClientRect();
+        // Full-width tall element = hero banner (not the short header bar)
+        if (r.width > viewW * 0.5 && r.height > 120) {
+          sibling.style.setProperty("display", "none", "important");
+          sibling.setAttribute("data-fa-hidden", "hero");
+          console.log("[FlowAccess] Hid hero banner");
+        }
+      }
+    }
+
+    done = true;
   }
 
-  // ── Run after page renders (needs computed dimensions) ────────────────────
-  // MutationObserver + timed retries to handle React lazy-loading
-
-  const observer = new MutationObserver(() => {
-    if (!done) hideProjectCards();
-  });
+  // ── Run after render, with retries for lazy-loaded content ─────────────────
+  const observer = new MutationObserver(() => { if (!done) run(); });
 
   function start() {
     observer.observe(document.body, { childList: true, subtree: true });
-    // Retry at increasing intervals — tiles may load lazily
-    [300, 800, 1500, 2500, 4000, 7000].forEach((ms) =>
-      setTimeout(() => { if (!done) hideProjectCards(); }, ms)
-    );
+    [400, 900, 1600, 2800, 5000].forEach(ms => setTimeout(() => { if (!done) run(); }, ms));
   }
 
-  // Wait for DOM to be ready before querying dimensions
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", start);
   } else {
