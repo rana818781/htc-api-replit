@@ -1,6 +1,6 @@
-// FlowAccess — Project Filter v6.0
-// Hides old project tiles by detecting they share a HORIZONTAL ROW with
-// the "+ New project" tile. Never touches header, hero, or other sections.
+// FlowAccess — Project Filter v7.0
+// Based on actual DOM: button → div → div → tile[4 at parent] → page[26 at parent]
+// Hides old project tiles and hero banner. Keeps header + "New project".
 
 (function () {
   "use strict";
@@ -10,69 +10,84 @@
   function run() {
     if (done) return;
 
-    // ── Step 1: Find "+ New project" text node ────────────────────────────
-    let newProjEl = null;
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    let node;
-    while ((node = walker.nextNode())) {
-      if (/new project/i.test(node.textContent) &&
-          node.textContent.trim().length < 40) {
-        newProjEl = node.parentElement;
+    // ── Find the "+ New project" button ──────────────────────────────────────
+    let newBtn = null;
+    for (const btn of document.querySelectorAll("button")) {
+      if (/new project/i.test(btn.textContent) && btn.textContent.trim().length < 40) {
+        newBtn = btn;
         break;
       }
     }
-    if (!newProjEl) return;
+    if (!newBtn) return;
 
-    // ── Step 2: Walk up (max 8 levels) looking for a horizontal row ───────
-    // A horizontal row = parent whose visible children all share roughly the
-    // same top position (they sit side-by-side, not stacked vertically).
+    // ── Walk up to the tile row (parent with 3–10 children) ─────────────────
+    // Known structure: depth 0-2 have 1-2 children, depth 3 has 4 → tile row
+    let el = newBtn;
+    for (let depth = 0; depth < 10; depth++) {
+      const parent = el.parentElement;
+      if (!parent || parent === document.body) break;
 
-    let card = newProjEl;
-    for (let depth = 0; depth < 8; depth++) {
-      const parent = card.parentElement;
-      if (!parent || parent === document.body || parent === document.documentElement) break;
+      const count = parent.children.length;
 
-      const kids = Array.from(parent.children).filter((k) => {
-        const s = getComputedStyle(k);
-        return s.display !== "none" && s.visibility !== "hidden" &&
-               k.getBoundingClientRect().width > 30;
-      });
-
-      if (kids.length < 2) { card = parent; continue; }
-
-      // Check if kids form a horizontal row (top positions within 60px)
-      const tops = kids.map((k) => k.getBoundingClientRect().top);
-      const minTop = Math.min(...tops);
-      const maxTop = Math.max(...tops);
-      const isRow = (maxTop - minTop) < 60;
-
-      if (isRow && kids.length >= 2) {
-        // ✓ Found the tile row — hide everything except "New project" tile
-        let hidCount = 0;
-        for (const kid of kids) {
-          if (kid === card || kid.contains(newProjEl)) continue;
-          if (/new project/i.test((kid.textContent || "").trim())) continue;
-          kid.style.setProperty("display", "none", "important");
-          kid.setAttribute("data-fa-hidden", "1");
-          hidCount++;
+      if (count >= 3 && count <= 10) {
+        // ✓ This is the tile row — hide all tiles except "New project"
+        let hid = 0;
+        for (const child of parent.children) {
+          if (child === el || child.contains(newBtn)) continue;
+          child.style.setProperty("display", "none", "important");
+          child.setAttribute("data-fa-hidden", "tile");
+          hid++;
         }
-        if (hidCount > 0) {
-          console.log(`[FlowAccess] Hid ${hidCount} old project tile(s)`);
+
+        if (hid > 0) {
+          console.log(`[FlowAccess] Hid ${hid} project tile(s) at depth ${depth}`);
+
+          // ── Also hide the hero banner at the grandparent level ────────────
+          // Grandparent has ~26 children. Find the hero: a large element that
+          // is NOT the tile row and NOT the top header bar.
+          const grandparent = parent.parentElement;
+          if (grandparent && grandparent.children.length > 10) {
+            // The header is the FIRST tall-ish element (top of page).
+            // The hero banner comes AFTER the header and is also tall.
+            let headerFound = false;
+
+            for (const gChild of grandparent.children) {
+              if (gChild === parent || gChild.contains(parent)) continue;
+
+              const r = gChild.getBoundingClientRect();
+              if (r.height < 10) continue; // Skip invisible elements
+
+              // First significant element = header → keep
+              if (!headerFound && r.height > 30) {
+                headerFound = true;
+                continue;
+              }
+
+              // Everything after the header and before/after the grid → hide
+              // if it's a tall visual element (hero banner)
+              if (r.height > 100) {
+                gChild.style.setProperty("display", "none", "important");
+                gChild.setAttribute("data-fa-hidden", "hero");
+                console.log(`[FlowAccess] Hid hero/banner (${r.height}px)`);
+              }
+            }
+          }
+
           done = true;
         }
         return;
       }
 
-      card = parent;
+      el = parent;
     }
   }
 
-  // ── Retry with MutationObserver + timers ──────────────────────────────────
-  const observer = new MutationObserver(() => { if (!done) run(); });
+  // ── Retry loop ──────────────────────────────────────────────────────────────
+  const obs = new MutationObserver(() => { if (!done) run(); });
 
   function start() {
-    observer.observe(document.body, { childList: true, subtree: true });
-    [500, 1000, 2000, 3500, 6000].forEach((ms) =>
+    obs.observe(document.body, { childList: true, subtree: true });
+    [400, 900, 1500, 2500, 5000].forEach(ms =>
       setTimeout(() => { if (!done) run(); }, ms)
     );
   }
