@@ -1,94 +1,116 @@
-// FlowAccess — Project Filter v7.0
-// Based on actual DOM: button → div → div → tile[4 at parent] → page[26 at parent]
-// Hides old project tiles and hero banner. Keeps header + "New project".
+// FlowAccess — Project Filter v8.0
+// DOM structure (confirmed):
+//   button "New project" [2 at parent]
+//     → div.iBXxRU (btn + project-list)  [1 at parent]
+//       → div.bYukoK                     [1 at parent]
+//         → div.crzReP                   [4 at parent = section level]
+//           → div                        [26 at parent = page level]
+//
+// Strategy:
+//   1. Hide old projects: button's SIBLING inside div.iBXxRU (the virtuoso list)
+//   2. Hide hero banner: at the 4-children section level, keep header + project section
 
 (function () {
   "use strict";
 
-  let done = false;
+  let tilesDone = false;
+  let heroDone = false;
 
   function run() {
-    if (done) return;
+    if (tilesDone && heroDone) return;
 
-    // ── Find the "+ New project" button ──────────────────────────────────────
     let newBtn = null;
     for (const btn of document.querySelectorAll("button")) {
-      if (/new project/i.test(btn.textContent) && btn.textContent.trim().length < 40) {
+      const t = (btn.textContent || "").trim();
+      if (/new project/i.test(t) && t.length < 40) {
         newBtn = btn;
         break;
       }
     }
     if (!newBtn) return;
 
-    // ── Walk up to the tile row (parent with 3–10 children) ─────────────────
-    // Known structure: depth 0-2 have 1-2 children, depth 3 has 4 → tile row
-    let el = newBtn;
-    for (let depth = 0; depth < 10; depth++) {
-      const parent = el.parentElement;
-      if (!parent || parent === document.body) break;
-
-      const count = parent.children.length;
-
-      if (count >= 3 && count <= 10) {
-        // ✓ This is the tile row — hide all tiles except "New project"
+    // ── Step 1: Hide old project tiles ────────────────────────────────────────
+    // Button's parent (div.iBXxRU) has 2 children:
+    //   child 1 = project list (virtuoso scroller)
+    //   child 2 = "New project" button
+    // Hide everything in that parent EXCEPT the button.
+    if (!tilesDone) {
+      const btnParent = newBtn.parentElement;
+      if (btnParent) {
         let hid = 0;
-        for (const child of parent.children) {
-          if (child === el || child.contains(newBtn)) continue;
+        for (const child of btnParent.children) {
+          if (child === newBtn) continue;
+          if (child.tagName === "BUTTON") continue;
           child.style.setProperty("display", "none", "important");
-          child.setAttribute("data-fa-hidden", "tile");
+          child.setAttribute("data-fa-hidden", "tiles");
+          hid++;
+        }
+        if (hid > 0) {
+          console.log("[FlowAccess] Hid project list (" + hid + " sibling(s) of New Project button)");
+          tilesDone = true;
+        }
+      }
+    }
+
+    // ── Step 2: Hide hero banner ──────────────────────────────────────────────
+    // Walk up from button to the section level (parent with 3-6 children).
+    // Keep: the section that contains "New project" (project grid)
+    //        + the section with the SMALLEST top (header bar).
+    // Hide: everything else (hero banner, etc.).
+    if (!heroDone) {
+      let el = newBtn;
+      for (let i = 0; i < 8; i++) {
+        el = el.parentElement;
+        if (!el || el === document.body) break;
+
+        const sectionParent = el.parentElement;
+        if (!sectionParent) break;
+
+        const count = sectionParent.children.length;
+        if (count < 3 || count > 6) continue;
+
+        // Found the section level (4 children expected)
+        const kids = Array.from(sectionParent.children);
+
+        // Find the header = visible child with the smallest top position
+        let headerEl = null;
+        let minTop = Infinity;
+        for (const kid of kids) {
+          const r = kid.getBoundingClientRect();
+          if (r.height < 5 || r.width < 50) continue;
+          if (r.top < minTop) {
+            minTop = r.top;
+            headerEl = kid;
+          }
+        }
+
+        let hid = 0;
+        for (const kid of kids) {
+          if (kid === el) continue;
+          if (kid.contains(newBtn)) continue;
+          if (kid === headerEl) continue;
+          kid.style.setProperty("display", "none", "important");
+          kid.setAttribute("data-fa-hidden", "hero");
           hid++;
         }
 
         if (hid > 0) {
-          console.log(`[FlowAccess] Hid ${hid} project tile(s) at depth ${depth}`);
-
-          // ── Also hide the hero banner at the grandparent level ────────────
-          // Grandparent has ~26 children. Find the hero: a large element that
-          // is NOT the tile row and NOT the top header bar.
-          const grandparent = parent.parentElement;
-          if (grandparent && grandparent.children.length > 10) {
-            // The header is the FIRST tall-ish element (top of page).
-            // The hero banner comes AFTER the header and is also tall.
-            let headerFound = false;
-
-            for (const gChild of grandparent.children) {
-              if (gChild === parent || gChild.contains(parent)) continue;
-
-              const r = gChild.getBoundingClientRect();
-              if (r.height < 10) continue; // Skip invisible elements
-
-              // First significant element = header → keep
-              if (!headerFound && r.height > 30) {
-                headerFound = true;
-                continue;
-              }
-
-              // Everything after the header and before/after the grid → hide
-              // if it's a tall visual element (hero banner)
-              if (r.height > 100) {
-                gChild.style.setProperty("display", "none", "important");
-                gChild.setAttribute("data-fa-hidden", "hero");
-                console.log(`[FlowAccess] Hid hero/banner (${r.height}px)`);
-              }
-            }
-          }
-
-          done = true;
+          console.log("[FlowAccess] Hid " + hid + " section(s) (hero/banner)");
+          heroDone = true;
         }
-        return;
+        break;
       }
-
-      el = parent;
     }
   }
 
-  // ── Retry loop ──────────────────────────────────────────────────────────────
-  const obs = new MutationObserver(() => { if (!done) run(); });
+  const obs = new MutationObserver(() => {
+    if (!tilesDone || !heroDone) run();
+  });
 
   function start() {
     obs.observe(document.body, { childList: true, subtree: true });
-    [400, 900, 1500, 2500, 5000].forEach(ms =>
-      setTimeout(() => { if (!done) run(); }, ms)
+    [300, 800, 1500, 2500, 5000].forEach(ms =>
+      setTimeout(() => { if (!tilesDone || !heroDone) run(); }, ms)
     );
   }
 
