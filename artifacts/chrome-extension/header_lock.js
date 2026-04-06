@@ -1,5 +1,6 @@
 // FlowAccess — Header Lock (runs at document_start)
-// Blocks ?, three-dot, ULTRA, and profile buttons INSTANTLY as they appear.
+// Main page: blocks ?, three-dot, ULTRA, profile
+// Project page (/project/): blocks ONLY ULTRA + profile avatar
 
 (function () {
   "use strict";
@@ -12,6 +13,10 @@
     if (target && !css.parentNode) target.appendChild(css);
   }
   tryInjectCSS();
+
+  function isProjectPage() {
+    return /\/project\//i.test(location.pathname);
+  }
 
   function lockEl(el) {
     if (el.getAttribute("data-fa-locked")) return;
@@ -35,30 +40,44 @@
     }, true);
   }
 
-  function isAccountButton(el) {
+  function isProfileButton(el) {
+    const text = (el.textContent || "").trim().toLowerCase();
+    if (/ultra/i.test(text)) return true;
+    const aria = (el.getAttribute("aria-label") || "").toLowerCase();
+    const title = (el.getAttribute("title") || "").toLowerCase();
+    const all = text + " " + aria + " " + title;
+    if (/account|profile|sign out|sign in|user/i.test(all)) return true;
+    if (el.querySelector("img[src*='googleusercontent'], img[src*='avatar'], img[src*='profile']")) return true;
+    return false;
+  }
+
+  function isSettingsButton(el) {
     const text = (el.textContent || "").trim().toLowerCase();
     const aria = (el.getAttribute("aria-label") || "").toLowerCase();
     const title = (el.getAttribute("title") || "").toLowerCase();
     const all = text + " " + aria + " " + title;
-
-    if (/ultra/i.test(text)) return true;
     if (/help|\?|question/i.test(all)) return true;
     if (/more|menu|vert/i.test(all)) return true;
-    if (/account|profile|sign|user|settings/i.test(all)) return true;
-
-    if (el.querySelector("img[src*='googleusercontent'], img[src*='avatar'], img[src*='profile']")) return true;
-
+    if (/settings/i.test(all)) return true;
     return false;
   }
 
   function scan() {
     tryInjectCSS();
+    const onProject = isProjectPage();
 
     const allClickable = document.querySelectorAll("button, [role='button']");
     for (const el of allClickable) {
       if (el.getAttribute("data-fa-locked")) continue;
 
-      if (isAccountButton(el)) {
+      if (isProfileButton(el)) {
+        lockEl(el);
+        continue;
+      }
+
+      if (onProject) continue;
+
+      if (isSettingsButton(el)) {
         lockEl(el);
         continue;
       }
