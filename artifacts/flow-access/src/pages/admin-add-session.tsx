@@ -25,69 +25,6 @@ const sessionSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
-const steps = [
-  {
-    num: 1,
-    title: "আপনার Premium Google একাউন্ট দিয়ে লগিন করুন",
-    desc: (
-      <p className="text-sm text-muted-foreground mt-1">
-        Chrome-এ নতুন Tab খুলুন এবং{" "}
-        <a
-          href="https://labs.google/fx/tools/flow"
-          target="_blank"
-          rel="noreferrer"
-          className="text-primary underline hover:text-primary/80"
-        >
-          labs.google/fx/tools/flow
-        </a>{" "}
-        এ যান। আপনার premium Google একাউন্ট দিয়ে sign in করুন।
-      </p>
-    ),
-  },
-  {
-    num: 2,
-    title: "Chrome DevTools খুলুন",
-    desc: (
-      <p className="text-sm text-muted-foreground mt-1">
-        Keyboard shortcut:{" "}
-        <code className="text-xs bg-muted px-1.5 py-0.5 rounded">F12</code>{" "}
-        অথবা{" "}
-        <code className="text-xs bg-muted px-1.5 py-0.5 rounded">Ctrl + Shift + I</code>{" "}
-        (Windows) /{" "}
-        <code className="text-xs bg-muted px-1.5 py-0.5 rounded">Cmd + Option + I</code>{" "}
-        (Mac)
-      </p>
-    ),
-  },
-  {
-    num: 3,
-    title: "Application tab-এ যান",
-    desc: (
-      <p className="text-sm text-muted-foreground mt-1">
-        DevTools-এ উপরে <strong>Application</strong> ট্যাবে ক্লিক করুন। বাম দিকে{" "}
-        <strong>Cookies</strong>-এ ক্লিক করন, তারপর{" "}
-        <strong>https://labs.google</strong> সিলেক্ট করুন।
-      </p>
-    ),
-  },
-  {
-    num: 4,
-    title: "Console tab-এ কুকি কপি করুন",
-    desc: null,
-    code: true,
-  },
-  {
-    num: 5,
-    title: "নিচের form-এ paste করুন",
-    desc: (
-      <p className="text-sm text-muted-foreground mt-1">
-        Clipboard-এ কপি হওয়া কুকি নিচের &quot;Cookie Data&quot; বক্সে{" "}
-        <code className="text-xs bg-muted px-1.5 py-0.5 rounded">Ctrl+V</code> দিয়ে paste করুন।
-      </p>
-    ),
-  },
-];
-
 export default function AdminAddSession() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -143,51 +80,102 @@ export default function AdminAddSession() {
                 <p className="font-semibold text-base">How to get your session cookies from Chrome</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Step-by-step instructions</p>
               </div>
-              {guideOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
+              {guideOpen
+                ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+                : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="px-5 pb-5 space-y-5 border-t border-border pt-4">
-              {steps.map((step) => (
-                <div key={step.num} className="flex gap-3">
-                  <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0 mt-0.5">
-                    {step.num}
-                  </span>
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm">{step.title}</p>
-                    {step.desc}
-                    {step.code && (
-                      <div className="mt-2">
-                        <p className="text-sm text-muted-foreground mb-2">
-                          DevTools-এ <strong>Console</strong> ট্যাবে যান এবং নিচের কোডটি রান করুন:
-                        </p>
-                        <div className="flex items-center justify-between bg-[#1a1a2e] border border-border rounded-md px-4 py-3">
-                          <code className="text-sm text-green-400 font-mono">
-                            {"// Run this in Chrome DevTools Console on labs.google"}<br />
-                            <span className="text-white">{CONSOLE_SNIPPET}</span>
-                          </code>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="shrink-0 ml-3 text-muted-foreground hover:text-foreground"
-                            onClick={handleCopy}
-                          >
-                            {copied ? (
-                              <><CheckCircle2 className="h-4 w-4 mr-1 text-primary" /> Copied</>
-                            ) : (
-                              <><Copy className="h-4 w-4 mr-1" /> Copy</>
-                            )}
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          এই command চালালে আপনার সব cookies automatically clipboard-এ কপি হয়ে যাবে।
-                        </p>
-                      </div>
-                    )}
-                  </div>
+              {/* Step 1 */}
+              <div className="flex gap-3">
+                <StepBadge n={1} />
+                <div>
+                  <p className="font-semibold text-sm">আপনার Premium Google একাউন্ট দিয়ে লগিন করুন</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Chrome-এ নতুন Tab খুলুন এবং{" "}
+                    <a
+                      href="https://labs.google/fx/tools/flow"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary underline hover:text-primary/80"
+                    >
+                      labs.google/fx/tools/flow
+                    </a>{" "}
+                    এ যান। আপনার premium Google একাউন্ট দিয়ে sign in করুন।
+                  </p>
                 </div>
-              ))}
+              </div>
+
+              {/* Step 2 */}
+              <div className="flex gap-3">
+                <StepBadge n={2} />
+                <div>
+                  <p className="font-semibold text-sm">Chrome DevTools খুলুন</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Keyboard shortcut:{" "}
+                    <Kbd>F12</Kbd> অথবা <Kbd>Ctrl + Shift + I</Kbd> (Windows) /{" "}
+                    <Kbd>Cmd + Option + I</Kbd> (Mac)
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="flex gap-3">
+                <StepBadge n={3} />
+                <div>
+                  <p className="font-semibold text-sm">Application tab-এ যান</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    DevTools-এ উপরে <strong>Application</strong> ট্যাবে ক্লিক করুন। বাম দিকে{" "}
+                    <strong>Cookies</strong>-এ ক্লিক করন, তারপর{" "}
+                    <strong>https://labs.google</strong> সিলেক্ট করুন।
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 4 */}
+              <div className="flex gap-3">
+                <StepBadge n={4} />
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">Console tab-এ কুকি কপি করুন</p>
+                  <p className="text-sm text-muted-foreground mt-1 mb-2">
+                    DevTools-এ <strong>Console</strong> ট্যাবে যান এবং নিচের কোডটি রান করুন:
+                  </p>
+                  <div className="flex items-center justify-between bg-[#1a1a2e] border border-border rounded-md px-4 py-3 gap-3">
+                    <code className="text-sm font-mono leading-relaxed flex-1 overflow-x-auto">
+                      <span className="text-green-400">{"// Run this in Chrome DevTools Console on labs.google"}</span>
+                      <br />
+                      <span className="text-white">{CONSOLE_SNIPPET}</span>
+                    </code>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 text-muted-foreground hover:text-foreground"
+                      onClick={handleCopy}
+                    >
+                      {copied
+                        ? <><CheckCircle2 className="h-4 w-4 mr-1 text-primary" /> Copied</>
+                        : <><Copy className="h-4 w-4 mr-1" /> Copy</>}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    এই command চালালে আপনার সব cookies automatically clipboard-এ কপি হয়ে যাবে।
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 5 */}
+              <div className="flex gap-3">
+                <StepBadge n={5} />
+                <div>
+                  <p className="font-semibold text-sm">নিচের form-এ paste করুন</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Clipboard-এ কপি হওয়া কুকি নিচের &quot;Cookie Data&quot; বক্সে{" "}
+                    <Kbd>Ctrl+V</Kbd> দিয়ে paste করুন।
+                  </p>
+                </div>
+              </div>
             </div>
           </CollapsibleContent>
         </div>
@@ -236,14 +224,19 @@ export default function AdminAddSession() {
                   />
                 </FormControl>
                 <FormDescription>
-                  উপরের Step 4-এর console script চালিয়ে যা পাবেন সেটি এখানে paste করুন। EditThisCookie/Cookie-Editor থেকে JSON format-ও গ্রহণযোগ্য।
+                  উপরের Step 4-এর console script চালিয়ে যা পাবেন সেটি এখানে paste করুন।
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )} />
 
             <div className="flex gap-3 pt-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => navigate("/admin")}>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => navigate("/admin")}
+              >
                 Cancel
               </Button>
               <Button type="submit" className="flex-1" disabled={createMutation.isPending}>
@@ -254,5 +247,19 @@ export default function AdminAddSession() {
         </Form>
       </div>
     </div>
+  );
+}
+
+function StepBadge({ n }: { n: number }) {
+  return (
+    <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0 mt-0.5">
+      {n}
+    </span>
+  );
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{children}</code>
   );
 }
