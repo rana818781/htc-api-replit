@@ -80,6 +80,13 @@ paths:
       tags: [extension]
       summary: Get user info via API token
       description: Verifies an API token (X-API-Token header) and returns user info
+      parameters:
+        - in: header
+          name: X-API-Token
+          required: true
+          schema:
+            type: string
+          description: API token issued via GET /extension/token
       responses:
         "200":
           description: User info
@@ -100,6 +107,13 @@ paths:
       tags: [extension]
       summary: Inject a Google session
       description: Verifies API token, picks least-recently-used active session, deducts 1 credit, logs usage, returns cookie data
+      parameters:
+        - in: header
+          name: X-API-Token
+          required: true
+          schema:
+            type: string
+          description: API token issued via GET /extension/token
       responses:
         "200":
           description: Cookie data for injection

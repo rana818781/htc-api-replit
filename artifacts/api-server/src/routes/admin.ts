@@ -1,9 +1,8 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, count, sql } from "drizzle-orm";
+import { eq, desc, count } from "drizzle-orm";
 import { createClerkClient } from "@clerk/express";
 import { db, usersTable, plansTable, sessionsTable, usageLogsTable } from "@workspace/db";
 import { requireAdmin, type AuthenticatedRequest } from "../middlewares/auth";
-import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -187,16 +186,29 @@ router.post("/admin/users", async (req: AuthenticatedRequest, res): Promise<void
     }
   }
 
-  const [newUser] = await db
-    .insert(usersTable)
-    .values({
-      clerkUserId: clerkUser.id,
-      email,
-      planId: planId ?? null,
-      creditsTotal: creditsTotal ?? 0,
-      isAdmin: isAdmin ?? false,
-    })
-    .returning();
+  let newUser;
+  try {
+    [newUser] = await db
+      .insert(usersTable)
+      .values({
+        clerkUserId: clerkUser.id,
+        email,
+        planId: planId ?? null,
+        creditsTotal: creditsTotal ?? 0,
+        isAdmin: isAdmin ?? false,
+      })
+      .returning();
+  } catch (dbErr: unknown) {
+    // DB insert failed — clean up the Clerk user to prevent identity drift.
+    try {
+      await clerk.users.deleteUser(clerkUser.id);
+    } catch {
+      // Best-effort cleanup.
+    }
+    req.log.error({ dbErr }, "Failed to insert user into DB; rolled back Clerk user");
+    res.status(500).json({ error: "Failed to save user; please try again" });
+    return;
+  }
 
   let planName: string | null = null;
   if (newUser.planId) {
