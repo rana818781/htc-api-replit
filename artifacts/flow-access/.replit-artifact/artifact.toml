@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "FlowAccess"
+version = "1.0.0"
+id = "artifacts/flow-access"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19598
+
+[services.development]
+run = "pnpm --filter @workspace/flow-access run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/flow-access", "run", "build" ]
+publicDir = "artifacts/flow-access/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19598"
+BASE_PATH = "/"
