@@ -67,7 +67,18 @@ async function fetchAndInject(token, tabId) {
       .filter(Boolean);
   }
 
-  // Inject each cookie into labs.google
+  // ── Step 1: Clear ALL existing labs.google cookies so the user's own
+  //            account is fully logged out before injecting the session. ──────
+  const existingCookies = await chrome.cookies.getAll({ domain: "labs.google" });
+  for (const c of existingCookies) {
+    const scheme = c.secure ? "https" : "http";
+    const cookieDomain = c.domain.startsWith(".") ? c.domain.slice(1) : c.domain;
+    await chrome.cookies.remove({ url: `${scheme}://${cookieDomain}${c.path}`, name: c.name })
+      .catch(() => {});
+  }
+  console.log(`[FlowAccess] Cleared ${existingCookies.length} existing labs.google cookies`);
+
+  // ── Step 2: Inject each session cookie ──────────────────────────────────────
   for (const cookie of cookies) {
     const rawDomain = cookie.domain || "labs.google";
     const cleanDomain = rawDomain.startsWith(".") ? rawDomain.slice(1) : rawDomain;
