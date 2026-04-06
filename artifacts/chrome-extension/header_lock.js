@@ -115,37 +115,68 @@
       lockEl(el);
     }
 
-    var BLOCKED_MODELS = ["veo 3.1 - quality"];
+    var BLOCKED_MODEL_RE = /veo\s*3\.1\s*-\s*quality/i;
 
-    var allEls = document.querySelectorAll("button, [role='button'], [role='option'], [role='menuitem'], [role='menuitemradio'], li, div[class]");
-    for (var i = 0; i < allEls.length; i++) {
-      var item = allEls[i];
-      if (item.getAttribute("data-fa-model-blocked")) continue;
-      var itemText = (item.textContent || "").trim().toLowerCase();
-      for (var b = 0; b < BLOCKED_MODELS.length; b++) {
-        if (itemText === BLOCKED_MODELS[b]) {
-          item.setAttribute("data-fa-model-blocked", "1");
-          item.style.setProperty("display", "none", "important");
-          item.style.setProperty("pointer-events", "none", "important");
-          item.addEventListener("click", function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-          }, true);
+    function hideModelItem(el) {
+      if (el.getAttribute("data-fa-model-blocked")) return;
+      el.setAttribute("data-fa-model-blocked", "1");
+      el.style.setProperty("display", "none", "important");
+      el.style.setProperty("visibility", "hidden", "important");
+      el.style.setProperty("height", "0", "important");
+      el.style.setProperty("overflow", "hidden", "important");
+      el.style.setProperty("pointer-events", "none", "important");
+      el.style.setProperty("position", "absolute", "important");
+      el.style.setProperty("opacity", "0", "important");
+      var blocker = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return false;
+      };
+      el.addEventListener("click", blocker, true);
+      el.addEventListener("mousedown", blocker, true);
+      el.addEventListener("pointerdown", blocker, true);
+      el.addEventListener("touchstart", blocker, true);
+    }
+
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+    while (walker.nextNode()) {
+      var tnode = walker.currentNode;
+      if (!BLOCKED_MODEL_RE.test(tnode.textContent)) continue;
+      var container = tnode.parentElement;
+      for (var up = 0; up < 8 && container; up++) {
+        var tag = container.tagName.toLowerCase();
+        var role = (container.getAttribute("role") || "").toLowerCase();
+        if (tag === "li" || role === "option" || role === "menuitem" || role === "menuitemradio" || role === "listitem") {
+          hideModelItem(container);
           break;
         }
+        if (container.parentElement && container.parentElement.getAttribute("role") === "listbox") {
+          hideModelItem(container);
+          break;
+        }
+        if (container.parentElement && container.parentElement.children.length >= 2 && container.parentElement.children.length <= 8) {
+          var siblings = container.parentElement.children;
+          var looksLikeList = true;
+          for (var si = 0; si < siblings.length; si++) {
+            if (siblings[si].tagName !== container.tagName) { looksLikeList = false; break; }
+          }
+          if (looksLikeList && container.getBoundingClientRect().height > 20) {
+            hideModelItem(container);
+            break;
+          }
+        }
+        container = container.parentElement;
       }
     }
 
-    var selectors = document.querySelectorAll("button, [role='combobox'], [role='listbox'], [class*='select'], [class*='dropdown']");
-    for (var s = 0; s < selectors.length; s++) {
-      var sel = selectors[s];
-      var selText = (sel.textContent || "").trim().toLowerCase();
-      for (var b2 = 0; b2 < BLOCKED_MODELS.length; b2++) {
-        if (selText === BLOCKED_MODELS[b2]) {
-          sel.style.setProperty("outline", "2px solid #ff4444", "important");
-          sel.style.setProperty("opacity", "0.5", "important");
-        }
+    var generateBtn = null;
+    var allBtns = document.querySelectorAll("button, [role='button']");
+    for (var gi = 0; gi < allBtns.length; gi++) {
+      var btnText = (allBtns[gi].textContent || "").trim().toLowerCase();
+      if (BLOCKED_MODEL_RE.test(btnText)) {
+        var genArrow = allBtns[gi].parentElement ? allBtns[gi].parentElement.querySelector("[aria-label*='generate'], [aria-label*='send'], [aria-label*='submit']") : null;
+        if (genArrow) lockEl(genArrow);
       }
     }
 
