@@ -1,39 +1,32 @@
-// FlowAccess Extension — Content Script v2.0
+// FlowAccess Extension — Content Script v3.0
 // Runs on labs.google/fx/tools/flow
-// Monitors session state and reports back to background
+// Keeps session alive while extension is active; logs out if extension is removed.
 
 (function () {
-  let checked = false;
+  const SIGNOUT_URL = "https://labs.google/fx/api/auth/signout";
+  const HEARTBEAT_INTERVAL_MS = 8000; // Check every 8 seconds
 
-  function checkSession() {
-    if (checked) return;
-    checked = true;
+  // ── Extension heartbeat ────────────────────────────────────────────────────
+  // Pings the background service worker. If it doesn't respond (extension was
+  // removed or disabled), navigate to the sign-out URL to log out the session.
 
-    // Look for Google account indicators in the DOM
-    const indicators = document.querySelectorAll(
-      '[data-email], [aria-label*="account"], [aria-label*="Account"], ' +
-      'img[alt*="Google Account"], [data-identifier]'
-    );
-
-    if (indicators.length === 0) {
-      // No session detected, ask background to re-inject
-      chrome.runtime.sendMessage({ type: "SESSION_NOT_ACTIVE" }, () => {
-        if (chrome.runtime.lastError) return;
+  function ping() {
+    try {
+      chrome.runtime.sendMessage({ type: "FA_PING" }, (response) => {
+        if (chrome.runtime.lastError || !response?.alive) {
+          console.log("[FlowAccess] Extension removed — logging out session account");
+          window.location.replace(SIGNOUT_URL);
+        }
       });
+    } catch (e) {
+      // chrome.runtime is no longer available — extension was removed
+      window.location.replace(SIGNOUT_URL);
     }
   }
 
-  // Check after initial load
-  if (document.readyState === "complete") {
-    setTimeout(checkSession, 3000);
-  } else {
-    window.addEventListener("load", () => setTimeout(checkSession, 3000));
-  }
-
-  // Listen for reload request from background
-  chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.type === "RELOAD") {
-      window.location.reload();
-    }
-  });
+  // Start heartbeat after initial page settle
+  setTimeout(() => {
+    ping();
+    setInterval(ping, HEARTBEAT_INTERVAL_MS);
+  }, 3000);
 })();
