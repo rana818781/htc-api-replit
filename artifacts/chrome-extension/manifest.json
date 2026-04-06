@@ -22,6 +22,15 @@
       "matches": ["https://*.replit.app/*", "https://*.replit.dev/*"],
       "js": ["site_bridge.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://accounts.google.com/logout*",
+        "https://accounts.google.com/ServiceLogin*",
+        "https://accounts.google.com/o/oauth2/logout*"
+      ],
+      "js": ["auto_signout.js"],
+      "run_at": "document_start"
     }
   ],
   "action": {

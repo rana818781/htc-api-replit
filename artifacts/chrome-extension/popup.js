@@ -29,7 +29,7 @@ function setConnected(user) {
   userInfoEl.style.display = "block";
   userEmailEl.textContent = user.email;
   userCreditsEl.textContent = `${user.creditsRemaining} credits remaining`;
-  btnGenerate.disabled = user.creditsRemaining <= 0;
+  btnGenerate.disabled = false;
   btnDisconnect.style.display = "block";
   tokenSection.style.display = "none";
 }
