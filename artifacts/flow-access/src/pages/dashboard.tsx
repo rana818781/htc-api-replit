@@ -14,8 +14,7 @@ import { Link } from "wouter";
 
 export default function Dashboard() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
+
   const { data: user, isLoading: isUserLoading } = useGetCurrentUser();
   const { data: tokenData } = useGetExtensionToken();
   const { data: usageData, isLoading: isUsageLoading } = useGetUserUsage();
