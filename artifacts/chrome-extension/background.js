@@ -133,18 +133,38 @@ async function fetchAndInject(token, tabId) {
 }
 
 // ─── Navigation Listener ─────────────────────────────────────────────────────
-// Auto-inject when user opens labs.google/fx/tools/flow
-// justReloaded tracks tabs we reloaded ourselves — skip re-injection for those
+// Auto-inject when user opens labs.google/fx/tools/flow.
+// Uses chrome.storage.session (survives service-worker restarts) to track which
+// tabs we already reloaded, preventing an infinite reload loop.
 
-const justReloaded = new Set();
+const SKIP_PREFIX = "fa_skip_tab_";
+
+async function markSkip(tabId) {
+  await chrome.storage.session.set({ [`${SKIP_PREFIX}${tabId}`]: Date.now() });
+}
+
+async function shouldSkip(tabId) {
+  const key = `${SKIP_PREFIX}${tabId}`;
+  const data = await chrome.storage.session.get(key);
+  const ts = data[key];
+  if (!ts) return false;
+  // Only skip for 15 seconds — after that allow fresh injection
+  if (Date.now() - ts < 15000) return true;
+  await chrome.storage.session.remove(key);
+  return false;
+}
+
+async function clearSkip(tabId) {
+  await chrome.storage.session.remove(`${SKIP_PREFIX}${tabId}`);
+}
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status !== "loading") return;
   if (!tab.url?.includes("labs.google/fx/tools/flow")) return;
 
-  // If we triggered this reload ourselves, skip to avoid infinite loop
-  if (justReloaded.has(tabId)) {
-    justReloaded.delete(tabId);
+  // Skip this load — we triggered it ourselves to apply the injected cookies
+  if (await shouldSkip(tabId)) {
+    await clearSkip(tabId);
     return;
   }
 
@@ -154,15 +174,12 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   const token = await getToken();
   if (!token) return;
 
-  // Inject fresh cookies to ensure correct account
   const result = await fetchAndInject(token, tabId);
 
   if (result.success) {
-    // Mark this tab so the next load event (caused by our reload) is skipped
-    justReloaded.add(tabId);
-    setTimeout(() => {
-      chrome.tabs.reload(tabId);
-    }, 800);
+    // Mark this tab before reloading so the next load event is skipped
+    await markSkip(tabId);
+    setTimeout(() => chrome.tabs.reload(tabId), 800);
   }
 });
 
