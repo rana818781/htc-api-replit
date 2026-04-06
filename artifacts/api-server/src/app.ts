@@ -30,7 +30,34 @@ app.use(
 
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
-app.use(cors({ credentials: true, origin: true }));
+// Restrict CORS to trusted origins only — do NOT use origin: true (reflects all origins)
+const TRUSTED_ORIGINS = [
+  // Replit dev domains
+  /^https:\/\/[^.]+\.replit\.dev$/,
+  /^https:\/\/[^.]+\.replit\.app$/,
+  // Local development
+  /^http:\/\/localhost(:\d+)?$/,
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+];
+
+app.use(
+  cors({
+    credentials: true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (server-to-server, curl, mobile apps)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      const allowed = TRUSTED_ORIGINS.some((pattern) => pattern.test(origin));
+      if (allowed) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS: origin not allowed: ${origin}`));
+      }
+    },
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

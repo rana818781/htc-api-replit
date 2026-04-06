@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, asc, isNull, or } from "drizzle-orm";
+import { eq, asc, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db, usersTable, sessionsTable, usageLogsTable, apiTokensTable, plansTable } from "@workspace/db";
 import { requireAuth, requireApiToken, getOrCreateUser, type AuthenticatedRequest } from "../middlewares/auth";
@@ -70,18 +70,23 @@ router.get("/extension/me", requireApiToken, async (req: AuthenticatedRequest, r
 router.post("/extension/inject", requireApiToken, async (req: AuthenticatedRequest, res): Promise<void> => {
   const user = req.dbUser!;
 
-  // Reload fresh user data
-  const [freshUser] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, user.id));
+  // Atomically deduct 1 credit using a conditional UPDATE.
+  // Only succeeds if credits_used < credits_total — prevents over-spending under concurrent requests.
+  const [updatedUser] = await db
+    .update(usersTable)
+    .set({ creditsUsed: sql`${usersTable.creditsUsed} + 1` })
+    .where(
+      sql`${usersTable.id} = ${user.id} AND ${usersTable.creditsUsed} < ${usersTable.creditsTotal}`,
+    )
+    .returning();
 
-  const creditsRemaining = Math.max(0, freshUser.creditsTotal - freshUser.creditsUsed);
-
-  if (creditsRemaining <= 0) {
+  if (!updatedUser) {
+    // No row updated means credits_used >= credits_total — no credits remaining
     res.status(403).json({ error: "No credits remaining" });
     return;
   }
+
+  const creditsRemaining = Math.max(0, updatedUser.creditsTotal - updatedUser.creditsUsed);
 
   // Pick least-recently-used active session
   const [session] = await db
@@ -92,28 +97,27 @@ router.post("/extension/inject", requireApiToken, async (req: AuthenticatedReque
     .limit(1);
 
   if (!session) {
+    // Roll back the credit deduction since we can't serve a session
+    await db
+      .update(usersTable)
+      .set({ creditsUsed: sql`${usersTable.creditsUsed} - 1` })
+      .where(eq(usersTable.id, user.id));
     res.status(404).json({ error: "No active session available" });
     return;
   }
 
-  // Deduct 1 credit
-  await db
-    .update(usersTable)
-    .set({ creditsUsed: freshUser.creditsUsed + 1 })
-    .where(eq(usersTable.id, freshUser.id));
-
-  // Update session lastUsedAt and usageCount
+  // Update session lastUsedAt and usageCount atomically
   await db
     .update(sessionsTable)
     .set({
       lastUsedAt: new Date(),
-      usageCount: session.usageCount + 1,
+      usageCount: sql`${sessionsTable.usageCount} + 1`,
     })
     .where(eq(sessionsTable.id, session.id));
 
   // Log usage
   await db.insert(usageLogsTable).values({
-    userId: freshUser.id,
+    userId: user.id,
     sessionId: session.id,
     action: "inject",
     creditsUsed: 1,
@@ -121,7 +125,7 @@ router.post("/extension/inject", requireApiToken, async (req: AuthenticatedReque
 
   res.json({
     cookieData: session.cookieData,
-    creditsRemaining: creditsRemaining - 1,
+    creditsRemaining,
   });
 });
 

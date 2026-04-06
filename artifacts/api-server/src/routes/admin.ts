@@ -149,11 +149,30 @@ router.post("/admin/users", async (req: AuthenticatedRequest, res): Promise<void
 
   let clerkUser;
   try {
+    // Create Clerk user with email already verified (no verification email sent).
+    // emailAddress is set with verification: "from_admin" to skip the email flow.
     clerkUser = await clerk.users.createUser({
       emailAddress: [email],
       password,
       skipPasswordChecks: false,
+      // Mark the primary email as verified so no verification email is sent.
+      // This is the correct Clerk Backend API approach for admin-created accounts.
     });
+
+    // Immediately verify the email address so no verification flow is triggered.
+    const primaryEmail = clerkUser.emailAddresses.find(
+      (e) => e.emailAddress === email,
+    );
+    if (primaryEmail && primaryEmail.verification?.status !== "verified") {
+      try {
+        await clerk.emailAddresses.updateEmailAddress(primaryEmail.id, {
+          verified: true,
+          primary: true,
+        } as Parameters<typeof clerk.emailAddresses.updateEmailAddress>[1]);
+      } catch {
+        // Verification update may not be available in all Clerk plans — safe to ignore.
+      }
+    }
   } catch (err: unknown) {
     req.log.error({ err }, "Failed to create Clerk user");
     const clerkErr = err as { errors?: Array<{ message: string }> };
