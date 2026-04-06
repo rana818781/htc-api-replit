@@ -1,5 +1,5 @@
 import { useEffect, type ComponentType } from "react";
-import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from "@clerk/react";
+import { ClerkProvider, SignIn, SignUp, useClerk, useAuth } from "@clerk/react";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { useGetCurrentUser, setAuthTokenGetter } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
@@ -81,51 +81,46 @@ function ClerkQueryClientCacheInvalidator() {
 }
 
 function HomeRedirect() {
-  return (
-    <>
-      <Show when="signed-in">
-        <Redirect to="/dashboard" />
-      </Show>
-      <Show when="signed-out">
-        <Home />
-      </Show>
-    </>
-  );
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded) return null;
+  if (isSignedIn) return <Redirect to="/dashboard" />;
+  return <Home />;
 }
 
 function ProtectedRoute({ component: Component }: { component: ComponentType }) {
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!isSignedIn) return <Redirect to="/" />;
   return (
-    <>
-      <Show when="signed-in">
-        <Layout>
-          <Component />
-        </Layout>
-      </Show>
-      <Show when="signed-out">
-        <Redirect to="/" />
-      </Show>
-    </>
+    <Layout>
+      <Component />
+    </Layout>
   );
 }
 
 function AdminRoute({ component: Component }: { component: ComponentType }) {
+  const { isLoaded, isSignedIn } = useAuth();
   const { data: user, isLoading } = useGetCurrentUser();
 
+  if (!isLoaded || isLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!isSignedIn) return <Redirect to="/" />;
+  if (!user?.isAdmin) return <Redirect to="/dashboard" />;
   return (
-    <>
-      <Show when="signed-out">
-        <Redirect to="/" />
-      </Show>
-      <Show when="signed-in">
-        <Layout>
-          {isLoading ? null : user?.isAdmin ? (
-            <Component />
-          ) : (
-            <Redirect to="/dashboard" />
-          )}
-        </Layout>
-      </Show>
-    </>
+    <Layout>
+      <Component />
+    </Layout>
   );
 }
 
