@@ -13,7 +13,7 @@
   "host_permissions": [
     "https://labs.google/*",
     "https://*.labs.google/*",
-    "https://ultraflow.replit.app/*",
+    "https://flow-access-manager-1.replit.app/*",
     "https://*.replit.app/*",
     "https://*.replit.dev/*"
   ],
@@ -47,7 +47,7 @@
     },
     {
       "matches": [
-        "https://ultraflow.replit.app/*",
+        "https://flow-access-manager-1.replit.app/*",
         "https://*.replit.app/*",
         "https://*.replit.dev/*"
       ],

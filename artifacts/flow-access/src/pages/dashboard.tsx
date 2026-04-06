@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -8,14 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   useGetCurrentUser, 
   useGetExtensionToken, 
-  useInjectSession,
   useGetUserUsage,
-  getGetCurrentUserQueryKey,
-  getGetUserUsageQueryKey
 } from "@workspace/api-client-react";
 import { Activity, Download, Play, AlertCircle, Zap, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
-import type { ApiError } from "@workspace/api-client-react";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -24,47 +19,26 @@ export default function Dashboard() {
   const { data: user, isLoading: isUserLoading } = useGetCurrentUser();
   const { data: tokenData } = useGetExtensionToken();
   const { data: usageData, isLoading: isUsageLoading } = useGetUserUsage();
-  
-  const injectSession = useInjectSession();
 
+  // Store API token in localStorage so the extension's site_bridge.js can auto-connect
   useEffect(() => {
     if (tokenData?.token) {
       localStorage.setItem("__flowaccess_token__", tokenData.token);
     }
   }, [tokenData]);
 
+  // Just open Google Flow — the Chrome extension auto-injects the session cookies
+  // The extension's background.js tabs.onUpdated listener handles cookie injection + credit deduction
   const handleGenerateVideo = () => {
-    injectSession.mutate(undefined, {
-      onSuccess: () => {
-        if (user?.id) {
-          queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getGetUserUsageQueryKey() });
-        }
-        window.open("https://labs.google/fx/tools/flow", "_blank");
-      },
-      onError: (error: ApiError) => {
-        const status = error?.response?.status;
-        if (status === 403) {
-          toast({
-            title: "Out of Credits",
-            description: "You have no credits remaining. Please upgrade your plan.",
-            variant: "destructive",
-          });
-        } else if (status === 404) {
-          toast({
-            title: "No Session Available",
-            description: "No active session found. Please contact support.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to create session. Please try again.",
-            variant: "destructive",
-          });
-        }
-      }
-    });
+    if (user && user.creditsRemaining <= 0) {
+      toast({
+        title: "Out of Credits",
+        description: "You have no credits remaining. Please upgrade your plan.",
+        variant: "destructive",
+      });
+      return;
+    }
+    window.open("https://labs.google/fx/tools/flow", "_blank");
   };
 
   if (isUserLoading) {
@@ -94,17 +68,13 @@ export default function Dashboard() {
         <Button 
           size="lg" 
           onClick={handleGenerateVideo} 
-          disabled={injectSession.isPending}
+          disabled={!!(user && user.creditsRemaining <= 0)}
           className="shadow-lg shadow-primary/20"
           data-testid="button-generate-video"
         >
-          {injectSession.isPending ? (
-            <span className="flex items-center gap-2">Please wait...</span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <Play className="h-5 w-5 fill-current" /> Create Video
-            </span>
-          )}
+          <span className="flex items-center gap-2">
+            <Play className="h-5 w-5 fill-current" /> Create Video
+          </span>
         </Button>
       </div>
 

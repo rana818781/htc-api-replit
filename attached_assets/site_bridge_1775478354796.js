@@ -1,9 +1,9 @@
 // FlowAccess Extension — Site Bridge v2.0
-// Runs on ultraflow.replit.app
+// Runs on flow-access-manager-1.replit.app
 // Auto-detects the user's API token and sends it to the background worker
 
 (function () {
-  const SITE_ORIGIN = "https://ultraflow.replit.app";
+  const SITE_ORIGIN = "https://flow-access-manager-1.replit.app";
   const LS_KEY = "__flowaccess_token__";
 
   // Check if we're on the FlowAccess site

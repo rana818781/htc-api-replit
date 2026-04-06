@@ -1,7 +1,7 @@
 // FlowAccess Extension — Background Service Worker v2.0
 // Handles session injection into labs.google for FlowAccess users
 
-const API_BASE = "https://ultraflow.replit.app";
+const API_BASE = "https://flow-access-manager-1.replit.app";
 const STORAGE_KEY_TOKEN = "fa_api_token";
 const STORAGE_KEY_USER = "fa_user";
 const STORAGE_KEY_DISABLED = "fa_disabled";

@@ -1,6 +1,6 @@
 // FlowAccess Extension — Popup Script v2.0
 
-const SITE_URL = "https://ultraflow.replit.app";
+const SITE_URL = "https://flow-access-manager-1.replit.app";
 const STORAGE_KEY_TOKEN = "fa_api_token";
 
 function show(id) {
