@@ -17,7 +17,18 @@ export async function getOrCreateUser(
     .from(usersTable)
     .where(eq(usersTable.clerkUserId, clerkUserId));
 
-  if (byClerkId) return byClerkId;
+  if (byClerkId) {
+    // Update stale placeholder email if we now have the real one
+    if (byClerkId.email.includes("@unknown.local") && !email.includes("@unknown.local")) {
+      const [updated] = await db
+        .update(usersTable)
+        .set({ email })
+        .where(eq(usersTable.id, byClerkId.id))
+        .returning();
+      return updated;
+    }
+    return byClerkId;
+  }
 
   // Check by email — handles pre-created manual_ users
   const [byEmail] = await db

@@ -3,17 +3,13 @@ import { eq, asc, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db, usersTable, sessionsTable, usageLogsTable, apiTokensTable, plansTable } from "@workspace/db";
 import { requireAuth, requireApiToken, getOrCreateUser, type AuthenticatedRequest } from "../middlewares/auth";
-import { getAuth } from "@clerk/express";
+import { resolveClerkEmail } from "../lib/clerkEmail";
 
 const router: IRouter = Router();
 
 router.get("/extension/token", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
   const clerkUserId = req.clerkUserId!;
-  const auth = getAuth(req);
-  const email =
-    (auth?.sessionClaims?.email as string | undefined) ||
-    `${clerkUserId}@unknown.local`;
-
+  const email = await resolveClerkEmail(req, clerkUserId);
   const user = await getOrCreateUser(clerkUserId, email);
 
   // Check if user already has a token
