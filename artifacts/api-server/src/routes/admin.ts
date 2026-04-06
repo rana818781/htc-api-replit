@@ -95,6 +95,9 @@ router.delete("/admin/sessions/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  // Must delete usage_logs referencing this session first (foreign key constraint)
+  await db.delete(usageLogsTable).where(eq(usageLogsTable.sessionId, id));
+
   const [session] = await db
     .delete(sessionsTable)
     .where(eq(sessionsTable.id, id))

@@ -279,7 +279,8 @@ function SessionsTab() {
         toast({ title: "Session Deleted" });
         queryClient.invalidateQueries({ queryKey: getListAdminSessionsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
-      }
+      },
+      onError: () => toast({ title: "Error", description: "Failed to delete session.", variant: "destructive" }),
     });
   };
 

@@ -38,6 +38,8 @@ const TRUSTED_ORIGINS = [
   // Local development
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+  // Chrome extension — all extension IDs allowed (extension authenticates via API token)
+  /^chrome-extension:\/\//,
 ];
 
 app.use(
