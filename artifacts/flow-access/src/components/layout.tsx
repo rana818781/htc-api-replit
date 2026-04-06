@@ -3,14 +3,16 @@ import { Link, useLocation } from "wouter";
 import { LogOut, LayoutDashboard, CreditCard, Activity, ShieldAlert, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useGetCurrentUser, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { data: apiUser } = useGetCurrentUser({ query: { enabled: !!user, queryKey: getGetCurrentUserQueryKey() } });
 
-  const isAdmin = user?.publicMetadata?.isAdmin === true || false; // simplified, we'll fetch from our API in pages
+  const isAdmin = apiUser?.isAdmin === true;
 
   const navItems = [
     { href: "/dashboard", label: "ড্যাশবোর্ড", icon: LayoutDashboard },
@@ -49,14 +51,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
               );
             })}
             
-            <Show when="signed-in">
+            {isAdmin && (
               <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>
                 <div className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors cursor-pointer ${location === "/admin" ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"}`}>
                   <ShieldAlert className="h-5 w-5" />
                   <span>অ্যাডমিন প্যানেল</span>
                 </div>
               </Link>
-            </Show>
+            )}
           </nav>
 
           <div className="mt-auto pt-4 border-t border-border">

@@ -13,8 +13,9 @@ import {
   getGetCurrentUserQueryKey,
   getGetUserUsageQueryKey
 } from "@workspace/api-client-react";
-import { Download, Play, AlertCircle, Zap, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { Activity, Download, Play, AlertCircle, Zap, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
+import type { ApiError } from "@workspace/api-client-react";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -43,7 +44,7 @@ export default function Dashboard() {
         }
         window.open("https://labs.google/fx/tools/flow", "_blank");
       },
-      onError: (error: any) => {
+      onError: (error: ApiError) => {
         const status = error?.response?.status;
         if (status === 403) {
           toast({
@@ -256,21 +257,3 @@ export default function Dashboard() {
   );
 }
 
-function Activity(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.48 12H2" />
-    </svg>
-  );
-}

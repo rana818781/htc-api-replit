@@ -1,6 +1,7 @@
 import { useEffect, type ComponentType } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
+import { useGetCurrentUser } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -96,6 +97,27 @@ function ProtectedRoute({ component: Component }: { component: ComponentType }) 
   );
 }
 
+function AdminRoute({ component: Component }: { component: ComponentType }) {
+  const { data: user, isLoading } = useGetCurrentUser();
+
+  return (
+    <>
+      <Show when="signed-out">
+        <Redirect to="/" />
+      </Show>
+      <Show when="signed-in">
+        <Layout>
+          {isLoading ? null : user?.isAdmin ? (
+            <Component />
+          ) : (
+            <Redirect to="/dashboard" />
+          )}
+        </Layout>
+      </Show>
+    </>
+  );
+}
+
 function PublicRouteWithLayout({ component: Component }: { component: ComponentType }) {
   return (
     <Layout>
@@ -148,7 +170,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
           <Route path="/plans" component={() => <PublicRouteWithLayout component={Plans} />} />
           <Route path="/usage" component={() => <ProtectedRoute component={Usage} />} />
-          <Route path="/admin" component={() => <ProtectedRoute component={Admin} />} />
+          <Route path="/admin" component={() => <AdminRoute component={Admin} />} />
           <Route component={() => <Layout><NotFound /></Layout>} />
         </Switch>
       </QueryClientProvider>
