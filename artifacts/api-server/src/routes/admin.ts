@@ -223,7 +223,7 @@ router.post("/admin/users", async (req: AuthenticatedRequest, res): Promise<void
 });
 
 // PATCH /admin/users/:id
-router.patch("/admin/users/:id", async (req, res): Promise<void> => {
+router.patch("/admin/users/:id", async (req: AuthenticatedRequest, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   if (isNaN(id)) {
@@ -236,7 +236,15 @@ router.patch("/admin/users/:id", async (req, res): Promise<void> => {
   if (planId !== undefined) updates.planId = planId;
   if (creditsTotal !== undefined) updates.creditsTotal = creditsTotal;
   if (creditsUsed !== undefined) updates.creditsUsed = creditsUsed;
-  if (isAdmin !== undefined) updates.isAdmin = isAdmin;
+  // Prevent admin from accidentally removing their own admin status
+  if (isAdmin !== undefined) {
+    const isSelf = req.dbUser?.id === id;
+    if (isSelf && !isAdmin) {
+      res.status(400).json({ error: "নিজের অ্যাডমিন স্ট্যাটাস সরাতে পারবেন না" });
+      return;
+    }
+    updates.isAdmin = isAdmin;
+  }
 
   const [user] = await db
     .update(usersTable)
