@@ -28,8 +28,13 @@ function setConnected(user) {
   statusText.textContent = "Connected";
   userInfoEl.style.display = "block";
   userEmailEl.textContent = user.email;
-  userCreditsEl.textContent = `${user.creditsRemaining} credits remaining`;
+  const noCredits = user.creditsRemaining <= 0;
+  userCreditsEl.textContent = noCredits
+    ? "No credits remaining — please upgrade"
+    : `${user.creditsRemaining} credits remaining`;
+  userCreditsEl.style.color = noCredits ? "#ef4444" : "#22c55e";
   btnGenerate.disabled = false;
+  btnGenerate.title = noCredits ? "No credits — upgrade your plan to continue" : "";
   btnDisconnect.style.display = "block";
   tokenSection.style.display = "none";
 }
