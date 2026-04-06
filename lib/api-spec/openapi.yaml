@@ -3,13 +3,22 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: FlowAccess API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: users
+    description: User operations
+  - name: extension
+    description: Chrome extension operations
+  - name: plans
+    description: Plan operations
+  - name: admin
+    description: Admin operations
+
 paths:
   /healthz:
     get:
@@ -24,6 +33,471 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /users/me:
+    get:
+      operationId: getCurrentUser
+      tags: [users]
+      summary: Get current user
+      description: Returns the authenticated user info with plan and credits
+      responses:
+        "200":
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /extension/token:
+    get:
+      operationId: getExtensionToken
+      tags: [extension]
+      summary: Get or create API token for extension
+      description: Returns or creates an API token for the current user (used by Chrome extension)
+      responses:
+        "200":
+          description: API token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiTokenResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /extension/me:
+    get:
+      operationId: getExtensionUser
+      tags: [extension]
+      summary: Get user info via API token
+      description: Verifies an API token (X-API-Token header) and returns user info
+      responses:
+        "200":
+          description: User info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /extension/inject:
+    post:
+      operationId: injectSession
+      tags: [extension]
+      summary: Inject a Google session
+      description: Verifies API token, picks least-recently-used active session, deducts 1 credit, logs usage, returns cookie data
+      responses:
+        "200":
+          description: Cookie data for injection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InjectResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: No credits remaining
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: No active session available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /plans:
+    get:
+      operationId: listPlans
+      tags: [plans]
+      summary: List all active plans
+      description: Returns all active subscription plans
+      responses:
+        "200":
+          description: List of plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Plan"
+
+  /admin/sessions/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get admin overview stats
+      description: Returns counts for sessions, users, and usage
+      responses:
+        "200":
+          description: Admin stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/sessions:
+    get:
+      operationId: listAdminSessions
+      tags: [admin]
+      summary: List all sessions
+      description: Returns all sessions with stats (admin only)
+      responses:
+        "200":
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminSession"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createAdminSession
+      tags: [admin]
+      summary: Create a new session
+      description: Creates a new Google account session (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionBody"
+      responses:
+        "201":
+          description: Created session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/sessions/{id}:
+    patch:
+      operationId: updateAdminSession
+      tags: [admin]
+      summary: Update a session
+      description: Updates an existing session (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSessionBody"
+      responses:
+        "200":
+          description: Updated session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteAdminSession
+      tags: [admin]
+      summary: Delete a session
+      description: Deletes a session (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: List all users
+      description: Returns all users with plan info (admin only)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createAdminUser
+      tags: [admin]
+      summary: Create a new user
+      description: Creates a real Clerk user and inserts into DB (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserBody"
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/users/{id}:
+    patch:
+      operationId: updateAdminUser
+      tags: [admin]
+      summary: Update a user
+      description: Updates a user's plan, credits, or admin status (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteAdminUser
+      tags: [admin]
+      summary: Delete a user
+      description: Deletes a user (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/usage:
+    get:
+      operationId: listAdminUsage
+      tags: [admin]
+      summary: List all usage logs
+      description: Returns all usage logs with user email (admin only)
+      responses:
+        "200":
+          description: List of usage logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUsageLog"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/usage:
+    get:
+      operationId: getUserUsage
+      tags: [users]
+      summary: Get current user usage logs
+      description: Returns usage logs for the current authenticated user
+      responses:
+        "200":
+          description: User's usage logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UsageLogEntry"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +508,268 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Plan:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        priceUsd:
+          type: string
+        creditsPerMonth:
+          type: integer
+        description:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - priceUsd
+        - creditsPerMonth
+        - isActive
+        - createdAt
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        clerkUserId:
+          type: string
+        email:
+          type: string
+        isAdmin:
+          type: boolean
+        planId:
+          type: ["integer", "null"]
+        planName:
+          type: ["string", "null"]
+        creditsTotal:
+          type: integer
+        creditsUsed:
+          type: integer
+        creditsRemaining:
+          type: integer
+        subscriptionStartedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - clerkUserId
+        - email
+        - isAdmin
+        - creditsTotal
+        - creditsUsed
+        - creditsRemaining
+        - createdAt
+
+    ApiTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+      required:
+        - token
+
+    InjectResponse:
+      type: object
+      properties:
+        cookieData:
+          type: string
+        creditsRemaining:
+          type: integer
+      required:
+        - cookieData
+        - creditsRemaining
+
+    AdminStats:
+      type: object
+      properties:
+        totalSessions:
+          type: integer
+        activeSessions:
+          type: integer
+        totalUsers:
+          type: integer
+        totalUsage:
+          type: integer
+      required:
+        - totalSessions
+        - activeSessions
+        - totalUsers
+        - totalUsage
+
+    AdminSession:
+      type: object
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        cookieData:
+          type: string
+        isActive:
+          type: boolean
+        lastUsedAt:
+          type: ["string", "null"]
+          format: date-time
+        usageCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - label
+        - cookieData
+        - isActive
+        - usageCount
+        - createdAt
+
+    CreateSessionBody:
+      type: object
+      properties:
+        label:
+          type: string
+        cookieData:
+          type: string
+        isActive:
+          type: boolean
+      required:
+        - label
+        - cookieData
+
+    UpdateSessionBody:
+      type: object
+      properties:
+        label:
+          type: string
+        cookieData:
+          type: string
+        isActive:
+          type: boolean
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        clerkUserId:
+          type: string
+        email:
+          type: string
+        isAdmin:
+          type: boolean
+        planId:
+          type: ["integer", "null"]
+        planName:
+          type: ["string", "null"]
+        creditsTotal:
+          type: integer
+        creditsUsed:
+          type: integer
+        subscriptionStartedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - clerkUserId
+        - email
+        - isAdmin
+        - creditsTotal
+        - creditsUsed
+        - createdAt
+
+    CreateUserBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        planId:
+          type: ["integer", "null"]
+        creditsTotal:
+          type: integer
+        isAdmin:
+          type: boolean
+      required:
+        - email
+        - password
+
+    UpdateUserBody:
+      type: object
+      properties:
+        planId:
+          type: ["integer", "null"]
+        creditsTotal:
+          type: integer
+        creditsUsed:
+          type: integer
+        isAdmin:
+          type: boolean
+
+    AdminUsageLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userEmail:
+          type: string
+        sessionId:
+          type: ["integer", "null"]
+        action:
+          type: string
+        creditsUsed:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - userEmail
+        - action
+        - creditsUsed
+        - createdAt
+
+    UsageLogEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        sessionId:
+          type: ["integer", "null"]
+        action:
+          type: string
+        creditsUsed:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - action
+        - creditsUsed
+        - createdAt

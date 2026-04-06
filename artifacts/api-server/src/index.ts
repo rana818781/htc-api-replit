@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { seedPlans } from "./lib/seed";
 
 const rawPort = process.env["PORT"];
 
@@ -14,6 +15,11 @@ const port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
+
+// Seed default plans on startup
+seedPlans().catch((err) => {
+  logger.error({ err }, "Failed to seed plans");
+});
 
 app.listen(port, (err) => {
   if (err) {

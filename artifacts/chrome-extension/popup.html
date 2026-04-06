@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlowAccess</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 320px;
+      min-height: 200px;
+      background: #0f0f0f;
+      color: #f0f0f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #1a1a1a;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-dot.connected { background: #22c55e; }
+    .status-dot.disconnected { background: #ef4444; }
+
+    .user-info {
+      padding: 12px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .user-info .email {
+      font-size: 13px;
+      color: #a0a0a0;
+      margin-bottom: 6px;
+    }
+
+    .credits {
+      font-size: 14px;
+      font-weight: 600;
+      color: #6366f1;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      margin-bottom: 8px;
+    }
+
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: #1a1a1a;
+      color: #ef4444;
+      border: 1px solid #ef4444;
+    }
+
+    .token-section {
+      margin-top: 12px;
+    }
+
+    .token-section label {
+      display: block;
+      font-size: 12px;
+      color: #a0a0a0;
+      margin-bottom: 6px;
+    }
+
+    .token-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .token-row input {
+      flex: 1;
+      padding: 8px 10px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #f0f0f0;
+      font-size: 12px;
+    }
+
+    .token-row input:focus {
+      outline: none;
+      border-color: #6366f1;
+    }
+
+    .token-row button {
+      padding: 8px 12px;
+      background: #6366f1;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .message {
+      font-size: 12px;
+      padding: 8px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .message.error { background: #2a1010; color: #ef4444; }
+    .message.success { background: #0a2a0a; color: #22c55e; }
+
+    #message { display: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">FA</div>
+    <h1>FlowAccess</h1>
+  </div>
+
+  <div id="message" class="message"></div>
+
+  <div id="status" class="status">
+    <div class="status-dot disconnected" id="status-dot"></div>
+    <span id="status-text">Checking status...</span>
+  </div>
+
+  <div id="user-info" class="user-info" style="display:none;">
+    <div class="email" id="user-email"></div>
+    <div class="credits" id="user-credits"></div>
+  </div>
+
+  <button class="btn btn-primary" id="btn-generate" disabled>
+    Generate Videos
+  </button>
+
+  <button class="btn btn-danger" id="btn-disconnect" style="display:none;">
+    Disconnect
+  </button>
+
+  <div class="token-section" id="token-section">
+    <label>Connect manually with API token:</label>
+    <div class="token-row">
+      <input type="text" id="token-input" placeholder="Paste your API token..." />
+      <button id="btn-connect">Connect</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

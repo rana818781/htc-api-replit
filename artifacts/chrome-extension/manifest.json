@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "FlowAccess",
+  "version": "1.0.0",
+  "description": "Access Google Flow AI video generation with your FlowAccess subscription",
+  "permissions": ["cookies", "storage", "tabs", "activeTab"],
+  "host_permissions": [
+    "https://labs.google/*",
+    "https://*.replit.app/*",
+    "https://*.replit.dev/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://labs.google/fx/tools/flow*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.replit.app/*", "https://*.replit.dev/*"],
+      "js": ["site_bridge.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "FlowAccess"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
