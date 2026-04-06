@@ -1,0 +1,233 @@
+Build a full-stack SaaS platform called "FlowAccess" — a managed access service for Google Flow (Google's AI video generation tool at labs.google/fx/tools/flow). Users subscribe to plans, receive credits, and use a Chrome extension that automatically injects Google account session cookies into the browser so they can use Google Flow without needing their own Google account.
+
+---
+
+## TECH STACK
+
+- **Monorepo**: pnpm workspaces
+- **Frontend**: React + Vite + TypeScript + Tailwind CSS + shadcn/ui components
+- **Backend**: Express.js + TypeScript + Drizzle ORM
+- **Database**: PostgreSQL (Replit built-in)
+- **Auth**: Clerk (use Replit's Clerk integration or manual setup with CLERK_PUBLISHABLE_KEY + CLERK_SECRET_KEY env vars)
+- **Chrome Extension**: Vanilla JS Manifest V3
+
+---
+
+## DATABASE SCHEMA (Drizzle ORM)
+
+Create a shared `lib/db` package with these tables:
+
+### users
+- id (serial primary key)
+- clerkUserId (varchar, unique) — Clerk user ID, or `manual_<uuid>` placeholder for pre-created users
+- email (varchar, unique)
+- isAdmin (boolean, default false)
+- planId (integer, nullable, foreign key → plans.id)
+- creditsTotal (integer, default 0)
+- creditsUsed (integer, default 0)
+- subscriptionStartedAt (timestamp, nullable)
+- createdAt (timestamp, default now)
+
+### plans
+- id (serial primary key)
+- name (varchar) — e.g. "Starter", "Pro", "Unlimited"
+- priceUsd (numeric) — e.g. 9.99, 29.99, 79.99
+- creditsPerMonth (integer) — e.g. 10, 50, 200
+- description (text, nullable)
+- isActive (boolean, default true)
+- createdAt (timestamp, default now)
+
+### sessions (Google account session pool managed by admin)
+- id (serial primary key)
+- label (varchar) — friendly name like "Account #1"
+- cookieData (text) — JSON string of cookie objects
+- isActive (boolean, default true)
+- lastUsedAt (timestamp, nullable)
+- usageCount (integer, default 0)
+- createdAt (timestamp, default now)
+
+### usageLogs
+- id (serial primary key)
+- userId (integer, foreign key → users.id)
+- sessionId (integer, nullable, foreign key → sessions.id)
+- action (varchar) — e.g. "inject"
+- creditsUsed (integer, default 1)
+- createdAt (timestamp, default now)
+
+### apiTokens
+- id (serial primary key)
+- userId (integer, foreign key → users.id)
+- token (varchar, unique) — random hex token
+- createdAt (timestamp, default now)
+- lastUsedAt (timestamp, nullable)
+
+---
+
+## BACKEND API (Express + TypeScript)
+
+### Startup
+On server start, auto-seed 3 default plans if the plans table is empty:
+- Starter: $9.99, 10 credits/month
+- Pro: $29.99, 50 credits/month  
+- Unlimited: $79.99, 200 credits/month
+
+### Auth Middleware
+- `requireAuth`: Verifies Clerk session token from cookies using `@clerk/express`. Attaches `clerkUserId` to request.
+- `requireAdmin`: Calls `requireAuth` then checks if user has `isAdmin: true` in DB.
+- `getOrCreateUser(clerkUserId, email)`: Finds user by clerkUserId OR by email (to link pre-created manual_ users). If found by email with a `manual_` prefixed clerkUserId, update it to the real Clerk ID. If not found, create a new user.
+
+### API Routes
+
+**Auth / User**
+- `GET /api/users/me` — returns current user info + plan name + credits remaining
+- `GET /api/extension/token` — returns or creates an API token for the current user (used by Chrome extension)
+- `GET /api/extension/me` — verifies an API token (X-API-Token header) and returns user info
+- `POST /api/extension/inject` — verifies API token, picks the least-recently-used active session from the pool, deducts 1 credit, logs usage, returns cookieData + creditsRemaining
+- `GET /api/plans` — returns all active plans
+
+**Admin Routes (all require isAdmin)**
+- `GET /api/admin/sessions` — list all sessions with stats
+- `POST /api/admin/sessions` — create new session (body: label, cookieData)
+- `PATCH /api/admin/sessions/:id` — update session (label, cookieData, isActive)
+- `DELETE /api/admin/sessions/:id` — delete session
+- `GET /api/admin/sessions/stats` — return counts: totalSessions, activeSessions, totalUsers, totalUsage
+- `GET /api/admin/users` — list all users with plan info
+- `POST /api/admin/users` — **create a real Clerk user** using Clerk Backend API (`createClerkClient` from `@clerk/express`). Body: { email, password, planId?, creditsTotal?, isAdmin? }. Call `clerk.users.createUser({ emailAddress: [email], password })` — this creates the user in Clerk without sending any verification email. Then insert into DB with the real Clerk user ID.
+- `PATCH /api/admin/users/:id` — update user (planId, creditsTotal, creditsUsed, isAdmin)
+- `DELETE /api/admin/users/:id` — delete user
+- `GET /api/admin/usage` — list all usage logs with user email
+
+---
+
+## FRONTEND (React + Vite)
+
+Use Clerk's `<ClerkProvider>`, `<SignIn>`, `<SignUp>`, `<UserButton>` components. Configure Clerk with VITE_CLERK_PUBLISHABLE_KEY.
+
+### Pages
+
+**Sign In / Sign Up**
+- Clerk's built-in components, centered on screen with the FlowAccess brand
+
+**Dashboard (`/`)**
+- Show welcome message with user's name
+- **Generate Videos Card**: Big button that calls `POST /api/extension/inject` then opens `https://labs.google/fx/tools/flow` in a new tab. Show credits remaining. If no credits, show upgrade prompt.
+- Show credits used / credits total as a progress bar
+- **Extension Download Card**: Show download button for `flowaccess-extension.zip` (served as static file from /public/). Include Bengali-language install instructions.
+- Show current plan name and link to /plans
+- Show recent usage count
+
+**Plans (`/plans`)**
+- Fetch and display all plans as cards
+- Show name, price, credits per month, description
+- Highlight current plan
+
+**Usage (`/usage`)**
+- Show user's own usage logs as a table (date, credits used, action)
+
+**Admin Panel (`/admin`)** — only accessible if user.isAdmin
+- **Overview Tab**: Stats cards — total sessions, active sessions, total users, total usage
+- **Sessions Tab**: Table of all sessions with label, isActive toggle, usageCount, lastUsedAt. Add/Edit/Delete session dialogs. The add/edit form has a large textarea for cookie JSON data.
+- **Users Tab**: Table of all users with email, plan, credits, isAdmin badge. "Create User" button opens a dialog with: Email (required), Password (required, min 8 chars), Plan dropdown, Credits input, Admin checkbox. Editing a user allows changing plan and credits. 
+- **Usage Tab**: Full usage log table with user email, action, credits used, timestamp
+
+### On Dashboard Load
+After fetching `GET /api/extension/token`, store the token in `localStorage.__flowaccess_token__` so the Chrome extension's site bridge can auto-connect.
+
+---
+
+## CHROME EXTENSION (Manifest V3)
+
+Create in `artifacts/chrome-extension/` directory. Package as a zip file at `artifacts/flow-access/public/flowaccess-extension.zip` for download.
+
+### manifest.json
+- name: "FlowAccess"
+- permissions: cookies, storage, tabs, activeTab
+- host_permissions: https://labs.google/*, https://*.replit.app/*
+- background: service_worker: background.js
+- content_scripts: matches ["https://labs.google/fx/tools/flow*"], js: [content.js]
+- Also inject site_bridge.js on the FlowAccess website URL
+
+### background.js
+- Stores API token in chrome.storage.local
+- `chrome.tabs.onUpdated` listener: when a tab navigates to `labs.google/fx/tools/flow` with status "loading":
+  - **CRITICAL: Use a `justReloaded = new Set()` to track tabs we reloaded ourselves.** If the tab is in this set, remove it from the set and RETURN without injecting (prevents infinite reload loop).
+  - Fetch cookies via `POST /api/extension/inject` with X-API-Token header
+  - Parse the returned cookieData (JSON array of cookie objects)
+  - Inject each cookie using `chrome.cookies.set()` targeting `https://labs.google`
+  - Add tabId to `justReloaded` set, then call `chrome.tabs.reload(tabId)` after 800ms delay
+- Message handlers:
+  - `FA_AUTH_UPDATE`: save token from site bridge
+  - `FA_GET_STATUS`: return user info
+  - `FA_INJECT`: manual inject from popup
+  - `FA_LOGOUT`: clear token
+  - `SESSION_NOT_ACTIVE`: re-inject without reload
+
+### content.js
+- Runs on labs.google/fx/tools/flow
+- After 3 seconds, check if Google account indicators exist in DOM
+- If not found, send `SESSION_NOT_ACTIVE` message to background
+- Listen for `RELOAD` message from background → `window.location.reload()`
+
+### site_bridge.js
+- Runs on the FlowAccess website (replit.app domain)
+- Reads `localStorage.__flowaccess_token__`
+- If found, sends `FA_AUTH_UPDATE` message to extension with the token
+- Enables auto-connect without user needing to paste token manually
+
+### popup.html + popup.js
+- Show connection status (connected/disconnected)
+- Show user email and credits remaining if connected
+- "Generate Videos" button → inject + open Google Flow tab
+- "Disconnect" button
+- Token paste field for manual connection
+
+### auto_signout.js
+- Runs on Google logout URLs
+- Redirects back to labs.google/fx/tools/flow to prevent accidental sign-out
+
+---
+
+## KEY BEHAVIORS
+
+1. **No email verification on signup**: Configure Clerk (via Clerk Dashboard → Configure → Email, Phone, Username → Email address → Verification → None) to not require email verification. When admin creates users via the backend API, Clerk auto-verifies the email — no verification email is sent.
+
+2. **No two-factor authentication**: Disable via Clerk Dashboard → Configure → Multi-factor. Or call `PATCH https://api.clerk.com/v1/instance` with `{ "allowed_second_factors": [], "mfa_enabled": false }` using the CLERK_SECRET_KEY as Bearer token.
+
+3. **Pre-created user auto-link**: When admin creates a user with `manual_<uuid>` placeholder Clerk ID, `getOrCreateUser` must check by email first — if found and clerkUserId starts with "manual_", update it to the real Clerk ID on first login.
+
+4. **Session rotation**: `POST /api/extension/inject` always picks the active session with the oldest `lastUsedAt` to distribute load across the session pool.
+
+5. **Credits deduction**: Each inject costs 1 credit. If user has 0 credits remaining (creditsUsed >= creditsTotal), return 403 with "No credits remaining".
+
+6. **Extension infinite reload prevention**: The `justReloaded` Set in background.js is CRITICAL. Without it, every reload triggers another onUpdated event → inject → reload → infinite loop.
+
+---
+
+## ENVIRONMENT VARIABLES NEEDED
+
+- `DATABASE_URL` — PostgreSQL connection string
+- `CLERK_SECRET_KEY` — Clerk backend secret key (sk_...)
+- `CLERK_PUBLISHABLE_KEY` — Clerk publishable key (pk_...)
+- `VITE_CLERK_PUBLISHABLE_KEY` — Same publishable key for frontend
+- `PORT` — Server port (Replit assigns this automatically)
+
+---
+
+## UI STYLE
+
+- Dark theme by default (dark background, card-based layout)
+- Use shadcn/ui components throughout (Button, Card, Dialog, Input, Label, Select, Table, Badge, Progress, Tabs, Toast)
+- Language: Mix of English and Bengali (বাংলা) in UI text — labels and descriptions in Bengali, technical terms in English
+- Admin panel uses Tabs component with Overview, Sessions, Users, Usage tabs
+- Dashboard shows a prominent "Generate Videos" button card
+
+---
+
+## IMPORTANT IMPLEMENTATION NOTES
+
+- The API server must use `@clerk/express` for auth middleware
+- Use `createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })` from `@clerk/express` when creating users in the admin panel — do NOT just create a DB record with placeholder ID, actually create the Clerk user
+- The extension zip file must be rebuilt whenever extension files change
+- The frontend fetches API from the API server URL (stored in VITE_API_URL env var or hardcoded to the Replit deployment URL)
+- All admin routes must verify isAdmin from the database, not just from Clerk claims
+- The sessions table stores full cookie JSON including name, value, domain, path, secure, sameSite, expirationDate fields
