@@ -1,74 +1,86 @@
-// FlowAccess — Project Filter v3.0
-// Hides ONLY existing project cards on labs.google/fx/tools/flow.
-// Targets cards by their date text (e.g. "Apr 06, 09:14 PM").
-// Does NOT touch the header, hero banner, or anything else.
+// FlowAccess — Project Filter v4.0
+// Hides ONLY the project history tiles. Uses rendered dimensions to avoid
+// accidentally hiding the hero banner, header, or any other page section.
 
 (function () {
   "use strict";
 
-  // Date pattern found below each project card: "Apr 06, 09:14 PM"
-  const DATE_PATTERN = /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s*(?:\d{4},?\s*)?\d{1,2}:\d{2}/i;
-
-  function isNewProject(el) {
-    return /new project/i.test(el.textContent || "") &&
-           (el.textContent || "").trim().length < 80;
-  }
+  let done = false;
 
   function hideProjectCards() {
-    // Find all small elements whose text matches a date pattern
-    const candidates = document.querySelectorAll("div, span, p, time, small");
+    if (done) return;
 
-    for (const dateEl of candidates) {
-      const text = (dateEl.textContent || "").trim();
-      if (text.length > 40) continue;          // Skip long text (not just a date)
-      if (!DATE_PATTERN.test(text)) continue;  // Must look like a date
+    // ── Step 1: find the "+ New project" tile by text + rendered size ──────
+    let newProjTile = null;
 
-      // Walk UP from this date element to find the card-level ancestor.
-      // The card-level is where: its PARENT also contains a sibling with "New project".
-      let card = dateEl.parentElement;
-      for (let depth = 0; depth < 8; depth++) {
-        if (!card || card === document.body || card === document.documentElement) break;
+    const candidates = document.querySelectorAll("div, li, article, section, a, button");
+    for (const el of candidates) {
+      const text = (el.textContent || "").trim();
+      if (!/new project/i.test(text)) continue;
+      if (text.length > 60) continue; // Must be short (just the button text)
 
-        const grid = card.parentElement;
-        if (!grid) { card = card.parentElement; continue; }
+      const rect = el.getBoundingClientRect();
+      if (rect.width < 80 || rect.height < 80) continue; // Must have visible size
 
-        const siblings = Array.from(grid.children);
-        // Confirm we're in the project grid: at least one sibling has "New project"
-        const gridHasNewProject = siblings.some(s => s !== card && isNewProject(s));
-        if (gridHasNewProject) {
-          // ✓ This is a project card in the project grid — hide it
-          if (!card.getAttribute("data-fa-hidden")) {
-            card.style.setProperty("display", "none", "important");
-            card.setAttribute("data-fa-hidden", "1");
-          }
-          break;
+      newProjTile = el;
+      break;
+    }
+
+    if (!newProjTile) return; // Not loaded yet
+
+    const tileW = newProjTile.getBoundingClientRect().width;
+    const tileH = newProjTile.getBoundingClientRect().height;
+
+    // ── Step 2: walk UP until we find the grid where siblings have the
+    //    same dimensions as the New Project tile ──────────────────────────────
+    let grid = newProjTile.parentElement;
+
+    while (grid && grid !== document.body) {
+      const children = Array.from(grid.children);
+
+      // Find siblings that have ~same width & height as the New Project tile
+      const projectSiblings = children.filter((c) => {
+        if (c === newProjTile || c.contains(newProjTile)) return false;
+        if (/new project/i.test((c.textContent || "").trim())) return false;
+        const r = c.getBoundingClientRect();
+        if (r.width < 60 || r.height < 60) return false;
+
+        const wDiff = Math.abs(r.width - tileW) / tileW;
+        const hDiff = Math.abs(r.height - tileH) / tileH;
+        return wDiff < 0.4 && hDiff < 0.4; // within 40% of tile size
+      });
+
+      if (projectSiblings.length >= 1) {
+        // ✓ Found the project grid — hide ONLY the history tiles
+        for (const sib of projectSiblings) {
+          sib.style.setProperty("display", "none", "important");
+          sib.setAttribute("data-fa-hidden", "1");
         }
-
-        card = card.parentElement;
+        console.log(`[FlowAccess] Hid ${projectSiblings.length} old project tile(s)`);
+        done = true;
+        return;
       }
+
+      grid = grid.parentElement;
     }
   }
 
-  // ── MutationObserver for dynamic content ────────────────────────────────────
-  let timer = null;
-  let runs = 0;
-
-  function schedule() {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => { hideProjectCards(); runs++; }, 350);
-  }
+  // ── Run after page renders (needs computed dimensions) ────────────────────
+  // MutationObserver + timed retries to handle React lazy-loading
 
   const observer = new MutationObserver(() => {
-    if (runs < 30) schedule();
+    if (!done) hideProjectCards();
   });
 
   function start() {
-    hideProjectCards();
     observer.observe(document.body, { childList: true, subtree: true });
-    // Fixed retries to catch lazy-loaded tiles
-    [600, 1200, 2000, 3500, 6000].forEach(ms => setTimeout(hideProjectCards, ms));
+    // Retry at increasing intervals — tiles may load lazily
+    [300, 800, 1500, 2500, 4000, 7000].forEach((ms) =>
+      setTimeout(() => { if (!done) hideProjectCards(); }, ms)
+    );
   }
 
+  // Wait for DOM to be ready before querying dimensions
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", start);
   } else {
