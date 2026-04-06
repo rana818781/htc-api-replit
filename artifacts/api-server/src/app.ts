@@ -32,9 +32,9 @@ app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
 // Restrict CORS to trusted origins only — do NOT use origin: true (reflects all origins)
 const TRUSTED_ORIGINS = [
-  // Replit dev domains
-  /^https:\/\/[^.]+\.replit\.dev$/,
-  /^https:\/\/[^.]+\.replit\.app$/,
+  // Replit dev domains (allow any number of subdomains, e.g. foo.worf.replit.dev)
+  /^https:\/\/[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.replit\.dev$/,
+  /^https:\/\/[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.replit\.app$/,
   // Local development
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
