@@ -96,7 +96,7 @@ export default function Dashboard() {
         <Button 
           size="lg" 
           onClick={handleGenerateVideo} 
-          disabled={injectSession.isPending || isOutOfCredits}
+          disabled={injectSession.isPending}
           className="shadow-lg shadow-primary/20"
           data-testid="button-generate-video"
         >
