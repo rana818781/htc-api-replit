@@ -1,6 +1,6 @@
 // FlowAccess — Header Lock (runs at document_start)
 // Main page: blocks ?, three-dot, ULTRA, profile
-// Project page (/project/): blocks ONLY ULTRA + profile avatar
+// Project page (/project/): blocks three-dot, ULTRA + profile avatar
 
 (function () {
   "use strict";
@@ -51,6 +51,21 @@
     return false;
   }
 
+  function isThreeDotMenu(el) {
+    const text = (el.textContent || "").trim().toLowerCase();
+    const aria = (el.getAttribute("aria-label") || "").toLowerCase();
+    const title = (el.getAttribute("title") || "").toLowerCase();
+    const all = text + " " + aria + " " + title;
+    if (/more|menu|vert|three.?dot|kebab|overflow/i.test(all)) return true;
+    var inner = el.innerHTML || "";
+    if (/more_vert/i.test(inner)) return true;
+    if (el.querySelector("[data-icon='more_vert'], .material-icons, mat-icon")) {
+      var icon = el.querySelector("[data-icon='more_vert'], .material-icons, mat-icon");
+      if (icon && /more_vert/i.test(icon.textContent || icon.getAttribute("data-icon") || "")) return true;
+    }
+    return false;
+  }
+
   function isSettingsButton(el) {
     const text = (el.textContent || "").trim().toLowerCase();
     const aria = (el.getAttribute("aria-label") || "").toLowerCase();
@@ -75,6 +90,11 @@
         continue;
       }
 
+      if (isThreeDotMenu(el)) {
+        lockEl(el);
+        continue;
+      }
+
       if (onProject) continue;
 
       if (isSettingsButton(el)) {
@@ -92,6 +112,16 @@
       if (text.length > 20) continue;
 
       lockEl(el);
+    }
+
+    var menus = document.querySelectorAll("[role='menu'], [role='listbox']");
+    for (var m = 0; m < menus.length; m++) {
+      var menuEl = menus[m];
+      var menuText = (menuEl.textContent || "").toLowerCase();
+      if (/download project|product help|flow help center|about flow|learn flow|send app feedback|report legal|privacy notice/i.test(menuText)) {
+        menuEl.style.setProperty("display", "none", "important");
+        menuEl.style.setProperty("visibility", "hidden", "important");
+      }
     }
 
     const avatarImgs = document.querySelectorAll("img[src*='googleusercontent'], img[src*='avatar']");
