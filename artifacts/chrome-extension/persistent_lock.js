@@ -1,8 +1,8 @@
-// FlowAccess Extension — Persistent Lock v9.0
+// FlowAccess Extension — Persistent Lock v10.0
 // Runs at document_start in MAIN world on labs.google
 // Blocks signout while extension is active.
-// When extension is removed: nukes ALL site data (cookies, IndexedDB, Cache Storage,
-// localStorage, sessionStorage, service workers) — equivalent to "Clear browsing data".
+// When extension is removed: nukes ALL site data properly (waits for async ops)
+// then reloads — equivalent to "Clear browsing data" for this site.
 
 (function () {
   var extensionActive = true;
@@ -39,54 +39,109 @@
             document.cookie = base + ";samesite=lax";
           }
         }
+
+        if (name.startsWith("__Host-")) {
+          document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;secure";
+        }
+        if (name.startsWith("__Secure-")) {
+          for (var p2 = 0; p2 < paths.length; p2++) {
+            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=" + paths[p2] + ";secure";
+            for (var d2 = 0; d2 < domains.length; d2++) {
+              if (domains[d2]) {
+                document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=" + paths[p2] + ";domain=" + domains[d2] + ";secure";
+              }
+            }
+          }
+        }
       }
     } catch (e) {}
+  }
+
+  function clearIndexedDBData(dbName) {
+    return new Promise(function (resolve) {
+      try {
+        var req = indexedDB.open(dbName);
+        req.onsuccess = function (e) {
+          var db = e.target.result;
+          try {
+            var storeNames = Array.from(db.objectStoreNames);
+            if (storeNames.length > 0) {
+              var tx = db.transaction(storeNames, "readwrite");
+              storeNames.forEach(function (name) {
+                try { tx.objectStore(name).clear(); } catch (ex) {}
+              });
+              tx.oncomplete = function () { db.close(); resolve(); };
+              tx.onerror = function () { db.close(); resolve(); };
+              tx.onabort = function () { db.close(); resolve(); };
+            } else {
+              db.close();
+              resolve();
+            }
+          } catch (ex) {
+            try { db.close(); } catch (e2) {}
+            resolve();
+          }
+        };
+        req.onerror = function () { resolve(); };
+        req.onblocked = function () { resolve(); };
+      } catch (e) {
+        resolve();
+      }
+    });
   }
 
   function nukeIndexedDB() {
-    try {
-      if (indexedDB.databases) {
-        indexedDB.databases().then(function (dbs) {
-          dbs.forEach(function (db) {
-            try { indexedDB.deleteDatabase(db.name); } catch (e) {}
-          });
-        }).catch(function () {});
-      }
+    var knownDBs = [
+      "firebaseLocalStorageDb",
+      "firebase-heartbeat-database",
+      "firebase-installations-database",
+      "firebaseLocalStorage",
+      "firebase-installations-store",
+      "google-labs",
+      "google-labs-db",
+      "labs-db",
+      "__sak",
+      "idb-keyval",
+      "keyval-store",
+      "SCJSDB"
+    ];
 
-      var knownDBs = [
-        "firebaseLocalStorageDb", "firebase-heartbeat-database",
-        "firebase-installations-database", "firebaseLocalStorage",
-        "google-labs", "google-labs-db", "labs-db",
-        "__sak", "idb-keyval", "keyval-store"
-      ];
-      knownDBs.forEach(function (name) {
+    var promises = knownDBs.map(function (name) {
+      return clearIndexedDBData(name).then(function () {
         try { indexedDB.deleteDatabase(name); } catch (e) {}
       });
-    } catch (e) {}
+    });
+
+    if (indexedDB.databases) {
+      var listPromise = indexedDB.databases().then(function (dbs) {
+        return Promise.all(dbs.map(function (db) {
+          return clearIndexedDBData(db.name).then(function () {
+            try { indexedDB.deleteDatabase(db.name); } catch (e) {}
+          });
+        }));
+      }).catch(function () {});
+      promises.push(listPromise);
+    }
+
+    return Promise.all(promises).catch(function () {});
   }
 
   function nukeCacheStorage() {
-    try {
-      if (window.caches) {
-        caches.keys().then(function (names) {
-          names.forEach(function (name) {
-            try { caches.delete(name); } catch (e) {}
-          });
-        }).catch(function () {});
-      }
-    } catch (e) {}
+    if (!window.caches) return Promise.resolve();
+    return caches.keys().then(function (names) {
+      return Promise.all(names.map(function (name) {
+        return caches.delete(name).catch(function () {});
+      }));
+    }).catch(function () {});
   }
 
   function nukeServiceWorkers() {
-    try {
-      if (navigator.serviceWorker) {
-        navigator.serviceWorker.getRegistrations().then(function (registrations) {
-          registrations.forEach(function (reg) {
-            try { reg.unregister(); } catch (e) {}
-          });
-        }).catch(function () {});
-      }
-    } catch (e) {}
+    if (!navigator.serviceWorker) return Promise.resolve();
+    return navigator.serviceWorker.getRegistrations().then(function (regs) {
+      return Promise.all(regs.map(function (reg) {
+        return reg.unregister().catch(function () {});
+      }));
+    }).catch(function () {});
   }
 
   function doCleanup() {
@@ -96,12 +151,23 @@
     nukeCookies();
     try { localStorage.clear(); } catch (e) {}
     try { sessionStorage.clear(); } catch (e) {}
-    nukeIndexedDB();
-    nukeCacheStorage();
-    nukeServiceWorkers();
 
-    nukeCookies();
-    window.location.replace("https://labs.google/fx/tools/flow");
+    var maxWait = new Promise(function (resolve) {
+      setTimeout(resolve, 3000);
+    });
+
+    var cleanup = Promise.all([
+      nukeIndexedDB(),
+      nukeCacheStorage(),
+      nukeServiceWorkers()
+    ]);
+
+    Promise.race([cleanup, maxWait]).then(function () {
+      nukeCookies();
+      try { localStorage.clear(); } catch (e) {}
+      try { sessionStorage.clear(); } catch (e) {}
+      window.location.replace("https://labs.google/fx/tools/flow");
+    });
   }
 
   setInterval(function () {
