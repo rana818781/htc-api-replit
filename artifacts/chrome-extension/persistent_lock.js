@@ -1,44 +1,13 @@
-// FlowAccess Extension — Persistent Lock v11.0
+// FlowAccess Extension — Persistent Lock v12.0
 // Runs at document_start in MAIN world on labs.google
-// 1. Clears IndexedDB at page start (before Google's scripts) so no residual auth persists
-// 2. Blocks signout while extension is active
-// 3. When extension removed: clears ALL cookies + storage + reloads
+// 1. Blocks signout while extension is active
+// 2. When extension removed: clears ALL cookies + storage + reloads
 
 (function () {
   var extensionActive = true;
   var lastHeartbeat = Date.now();
   var STALE_THRESHOLD_MS = 4000;
   var cleanupStarted = false;
-
-  // ── Clear IndexedDB at page start (BEFORE Google's scripts initialize) ──
-  // This ensures no residual auth state from previous sessions.
-  // The extension re-injects cookies, so server-side auth still works.
-  (function clearIndexedDBAtStart() {
-    var knownDBs = [
-      "firebaseLocalStorageDb",
-      "firebase-heartbeat-database",
-      "firebase-installations-database",
-      "firebase-installations-store",
-      "firebaseLocalStorage",
-      "google-labs",
-      "google-labs-db",
-      "labs-db",
-      "__sak",
-      "idb-keyval",
-      "keyval-store",
-      "SCJSDB"
-    ];
-    knownDBs.forEach(function (name) {
-      try { indexedDB.deleteDatabase(name); } catch (e) {}
-    });
-    if (indexedDB.databases) {
-      indexedDB.databases().then(function (dbs) {
-        dbs.forEach(function (db) {
-          try { indexedDB.deleteDatabase(db.name); } catch (e) {}
-        });
-      }).catch(function () {});
-    }
-  })();
 
   window.addEventListener("message", function (e) {
     if (e.data && e.data.type === "FA_EXT_HEARTBEAT") {
