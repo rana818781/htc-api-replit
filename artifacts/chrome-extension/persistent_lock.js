@@ -1,8 +1,8 @@
-// FlowAccess Extension — Persistent Lock v8.0
+// FlowAccess Extension — Persistent Lock v9.0
 // Runs at document_start in MAIN world on labs.google
 // Blocks signout while extension is active.
-// When extension is removed: instantly clears ALL cookies (all are non-httpOnly)
-// and reloads — user is logged out immediately.
+// When extension is removed: nukes ALL site data (cookies, IndexedDB, Cache Storage,
+// localStorage, sessionStorage, service workers) — equivalent to "Clear browsing data".
 
 (function () {
   var extensionActive = true;
@@ -21,7 +21,7 @@
     }
   });
 
-  function nukeAllCookies() {
+  function nukeCookies() {
     try {
       var cookies = document.cookie.split(";");
       var paths = ["/", "/fx", "/fx/tools", "/fx/tools/flow", "/fx/api", "/fx/api/auth", "/fx/tools/flow/project"];
@@ -43,17 +43,69 @@
     } catch (e) {}
   }
 
+  function nukeIndexedDB() {
+    try {
+      if (indexedDB.databases) {
+        indexedDB.databases().then(function (dbs) {
+          dbs.forEach(function (db) {
+            try { indexedDB.deleteDatabase(db.name); } catch (e) {}
+          });
+        }).catch(function () {});
+      }
+
+      var knownDBs = [
+        "firebaseLocalStorageDb", "firebase-heartbeat-database",
+        "firebase-installations-database", "firebaseLocalStorage",
+        "google-labs", "google-labs-db", "labs-db",
+        "__sak", "idb-keyval", "keyval-store"
+      ];
+      knownDBs.forEach(function (name) {
+        try { indexedDB.deleteDatabase(name); } catch (e) {}
+      });
+    } catch (e) {}
+  }
+
+  function nukeCacheStorage() {
+    try {
+      if (window.caches) {
+        caches.keys().then(function (names) {
+          names.forEach(function (name) {
+            try { caches.delete(name); } catch (e) {}
+          });
+        }).catch(function () {});
+      }
+    } catch (e) {}
+  }
+
+  function nukeServiceWorkers() {
+    try {
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.getRegistrations().then(function (registrations) {
+          registrations.forEach(function (reg) {
+            try { reg.unregister(); } catch (e) {}
+          });
+        }).catch(function () {});
+      }
+    } catch (e) {}
+  }
+
   function doCleanup() {
     if (cleanupStarted) return;
     cleanupStarted = true;
 
-    nukeAllCookies();
+    nukeCookies();
     try { localStorage.clear(); } catch (e) {}
     try { sessionStorage.clear(); } catch (e) {}
+    nukeIndexedDB();
+    nukeCacheStorage();
+    nukeServiceWorkers();
 
-    nukeAllCookies();
+    nukeCookies();
 
-    window.location.replace("https://labs.google/fx/tools/flow");
+    setTimeout(function () {
+      nukeCookies();
+      window.location.replace("https://labs.google/fx/tools/flow");
+    }, 1500);
   }
 
   setInterval(function () {
