@@ -3,7 +3,6 @@
   var lastHeartbeat = Date.now();
   var STALE_THRESHOLD_MS = 4000;
   var cleanupStarted = false;
-  var removedDetected = false;
   var SIGNOUT_URL = "https://labs.google/fx/api/auth/signout";
   var FLOW_HOME = "https://labs.google/fx/";
 
@@ -15,9 +14,10 @@
       if (clicked) return true;
       var elems = document.querySelectorAll("button, a, [role='button'], input[type='submit'], span, div");
       for (var i = 0; i < elems.length; i++) {
-        var txt = (elems[i].textContent || elems[i].value || "").toLowerCase();
+        var txt = (elems[i].textContent || elems[i].value || "").trim();
         if (txt.length > 30) continue;
-        if (txt === "sign out" || txt === "Sign Out" || txt === "sign out" || txt === "signout" || txt === "Log out" || txt === "Logout" || txt === "logout") {
+        var lower = txt.toLowerCase();
+        if (lower === "sign out" || lower === "signout" || lower === "log out" || lower === "logout") {
           clicked = true;
           elems[i].click();
           return true;
@@ -39,12 +39,8 @@
       if (tryClickSignout()) clearInterval(signoutInterval);
     }, 50);
     setTimeout(function () { clearInterval(signoutInterval); }, 5000);
-
     function observeSignout() {
-      if (!document.body) {
-        document.addEventListener("DOMContentLoaded", observeSignout);
-        return;
-      }
+      if (!document.body) { document.addEventListener("DOMContentLoaded", observeSignout); return; }
       var obs = new MutationObserver(function () {
         if (tryClickSignout()) { obs.disconnect(); clearInterval(signoutInterval); }
       });
@@ -68,7 +64,6 @@
     if (origCookieDesc && origCookieDesc.set) origCookieDesc.set.call(document, val);
   }
 
-  var ownExtId = "";
   function isForeignExtension() {
     try {
       var err = new Error();
@@ -76,17 +71,9 @@
       if (stack.indexOf("chrome-extension://") === -1) return false;
       var lines = stack.split("\n");
       for (var i = 0; i < lines.length; i++) {
-        var line = lines[i];
-        if (line.indexOf("chrome-extension://") !== -1) {
-          var m = line.match(/chrome-extension:\/\/([a-z]+)/i);
-          if (m && m[1]) {
-            var extId = m[1];
-            if (!ownExtId) {
-              try { ownExtId = chrome && chrome.runtime && chrome.runtime.id ? chrome.runtime.id : ""; } catch (e) {}
-            }
-            if (ownExtId && extId === ownExtId) return false;
-            return true;
-          }
+        if (lines[i].indexOf("chrome-extension://") !== -1) {
+          var m = lines[i].match(/chrome-extension:\/\/([a-z]+)/i);
+          if (m && m[1]) return true;
         }
       }
     } catch (e) {}
@@ -109,11 +96,7 @@
     }
   } catch (e) {}
 
-  var origCookieStore = null;
-  var origCSGetAll = null;
-  var origCSGet = null;
-  var origCSSet = null;
-  var origCSDelete = null;
+  var origCookieStore = null, origCSGetAll = null, origCSGet = null, origCSSet = null, origCSDelete = null;
   try {
     if (window.cookieStore) {
       origCookieStore = window.cookieStore;
@@ -121,22 +104,10 @@
       origCSGet = window.cookieStore.get.bind(window.cookieStore);
       origCSSet = window.cookieStore.set.bind(window.cookieStore);
       origCSDelete = window.cookieStore.delete.bind(window.cookieStore);
-      window.cookieStore.getAll = function () {
-        if (isForeignExtension()) return Promise.resolve([]);
-        return origCSGetAll.apply(origCookieStore, arguments);
-      };
-      window.cookieStore.get = function () {
-        if (isForeignExtension()) return Promise.resolve(null);
-        return origCSGet.apply(origCookieStore, arguments);
-      };
-      window.cookieStore.set = function () {
-        if (isForeignExtension()) return Promise.resolve();
-        return origCSSet.apply(origCookieStore, arguments);
-      };
-      window.cookieStore.delete = function () {
-        if (isForeignExtension()) return Promise.resolve();
-        return origCSDelete.apply(origCookieStore, arguments);
-      };
+      window.cookieStore.getAll = function () { return isForeignExtension() ? Promise.resolve([]) : origCSGetAll.apply(origCookieStore, arguments); };
+      window.cookieStore.get = function () { return isForeignExtension() ? Promise.resolve(null) : origCSGet.apply(origCookieStore, arguments); };
+      window.cookieStore.set = function () { return isForeignExtension() ? Promise.resolve() : origCSSet.apply(origCookieStore, arguments); };
+      window.cookieStore.delete = function () { return isForeignExtension() ? Promise.resolve() : origCSDelete.apply(origCookieStore, arguments); };
     }
   } catch (e) {}
 
@@ -159,10 +130,7 @@
   }
 
   function initCookieEditorRemoval() {
-    if (!document.body) {
-      document.addEventListener("DOMContentLoaded", initCookieEditorRemoval);
-      return;
-    }
+    if (!document.body) { document.addEventListener("DOMContentLoaded", initCookieEditorRemoval); return; }
     removeCookieEditors();
     var obs = new MutationObserver(function (mutations) {
       for (var i = 0; i < mutations.length; i++) {
@@ -175,7 +143,7 @@
             nid.indexOf("editthiscookie") !== -1 || nid.indexOf("cookie-manager") !== -1 ||
             ncls.indexOf("cookie-editor") !== -1 || ncls.indexOf("cookieeditor") !== -1 ||
             ncls.indexOf("editthiscookie") !== -1 || ncls.indexOf("cookie-manager") !== -1;
-          if (isCookieExt && (nid.indexOf("__fa_") === -1)) node.remove();
+          if (isCookieExt && nid.indexOf("__fa_") === -1) node.remove();
         }
       }
     });
@@ -268,7 +236,6 @@
 
   function nukeAllStorage() {
     try { sessionStorage.clear(); } catch (e) {}
-    try { localStorage.removeItem("__fa_ext_disconnected__"); } catch (e) {}
     try {
       var keys = Object.keys(localStorage);
       for (var i = 0; i < keys.length; i++) {
@@ -291,37 +258,12 @@
     } catch (e) {}
   }
 
-  function isDisconnected() {
-    try { return localStorage.getItem("__fa_ext_disconnected__") === "1"; } catch (e) { return false; }
-  }
-
-  function isRemoved() {
-    try { if (localStorage.getItem("__fa_ext_removed__") === "1") return true; } catch (e) {}
-    return removedDetected;
-  }
-
-  function checkRemoval() {
-    try {
-      var ids = [typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id ? chrome.runtime.id : null].filter(Boolean);
-      if (ids.length === 0 && localStorage.getItem("__fa_ext_was_active__") === "1") {
-        removedDetected = true;
-        try { localStorage.setItem("__fa_ext_removed__", "1"); } catch (e) {}
-      }
-    } catch (e) {}
-  }
-
   function doCleanup() {
     if (cleanupStarted) return;
     cleanupStarted = true;
 
-    if (document.getElementById("__fa_cleanup_overlay__")) return;
-
     nukeCookies();
-    csrfSignout();
-
     nukeAllStorage();
-
-    setTimeout(nukeCookies, 1);
     setTimeout(nukeCookies, 1);
 
     var overlay = document.createElement("div");
@@ -330,66 +272,8 @@
     overlay.innerHTML = '<div style="text-align:center;"><h1 style="font-size:22px;font-weight:600;color:#ef4444;margin:0;">Signing out...</h1></div>';
     if (document.body) document.body.appendChild(overlay);
 
-    setTimeout(function () {
-      window.location.replace(FLOW_HOME);
-    }, 3000);
+    csrfSignout();
   }
-
-  function showFatalLock() {
-    if (document.getElementById("__fa_cleanup_overlay__")) return;
-    if (document.getElementById("__fa_fatal_lock__")) return;
-    var lock = document.createElement("div");
-    lock.id = "__fa_fatal_lock__";
-    lock.style.cssText = "position:fixed;inset:0;background:#000;z-index:2147483647;pointer-events:all;cursor:not-allowed;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;";
-    lock.innerHTML = "<div style='text-align:center;max-width:380px;padding:20px;'><span style='font-size:24px;font-weight:bold;'>FlowAccess Session Disconnected.</span><br><br><span style='font-size:16px;color:#aaa'>Please open the FlowAccess extension and sign in or re-inject session to continue.</span></div>";
-    if (document.body) document.body.appendChild(lock);
-  }
-
-  document.addEventListener("click", function (evt) {
-    if (!isDisconnected()) return;
-    var el = evt.target;
-    var depth = 0;
-    while (el && el !== document.body && depth < 8) {
-      var tag = (el.tagName || "").toLowerCase();
-      var txt = (el.textContent || "").trim().toLowerCase();
-      var ariaLabel = (el.getAttribute && el.getAttribute("aria-label") || "").toLowerCase();
-      var role = (el.getAttribute && el.getAttribute("role") || "").toLowerCase();
-      var isClickable = tag === "button" || tag === "a" || role === "button" || role === "menuitem" || role === "tab" || role === "link" || el.onclick || (el.hasAttribute && el.hasAttribute("onclick"));
-      var isAction = txt.includes("generate") || txt.includes("create") || txt.includes("new project") || txt.includes("submit") || ariaLabel.includes("generate") || ariaLabel.includes("create");
-      if (isClickable || isAction) {
-        evt.preventDefault();
-        evt.stopPropagation();
-        evt.stopImmediatePropagation();
-        if (isRemoved()) doCleanup();
-        return;
-      }
-      el = el.parentElement;
-      depth++;
-    }
-  }, true);
-
-  function periodicCheck() {
-    try {
-      checkRemoval();
-      if (isRemoved()) {
-        if (!cleanupStarted) doCleanup();
-        if (!document.getElementById("__fa_cleanup_overlay__")) doCleanup();
-      } else if (isDisconnected()) {
-        if (!document.getElementById("__fa_fatal_lock__") && !document.getElementById("__fa_cleanup_overlay__")) showFatalLock();
-      } else {
-        removedDetected = false;
-        cleanupStarted = false;
-        var overlay = document.getElementById("__fa_cleanup_overlay__");
-        if (overlay) overlay.remove();
-        var lock = document.getElementById("__fa_fatal_lock__");
-        if (lock) lock.remove();
-      }
-    } catch (e) {}
-  }
-
-  if (document.body) periodicCheck();
-  else document.addEventListener("DOMContentLoaded", periodicCheck);
-  setInterval(periodicCheck, 1000);
 
   setInterval(function () {
     if (Date.now() - lastHeartbeat > STALE_THRESHOLD_MS) {
