@@ -1,13 +1,15 @@
-// FlowAccess Extension — Persistent Lock v4.0
+// FlowAccess Extension — Persistent Lock v5.0
 // Runs at document_start in MAIN world on labs.google
-// Blocks signout while extension is active; auto-clears cookies and signs out when extension is removed
+// Blocks signout while extension is active.
+// When extension is removed: uses same-origin iframe to auto-click Google's
+// "Sign out" button silently — no popup, no new tab, no confirmation needed.
 
 (function () {
   var SIGNOUT_URL = "https://labs.google/fx/api/auth/signout";
   var extensionActive = true;
   var lastHeartbeat = Date.now();
   var STALE_THRESHOLD_MS = 10000;
-  var alreadyCleanedUp = false;
+  var cleanupStarted = false;
 
   window.addEventListener("message", function (e) {
     if (e.data && e.data.type === "FA_EXT_HEARTBEAT") {
@@ -20,7 +22,7 @@
     }
   });
 
-  function clearAllCookies() {
+  function clearAccessibleCookies() {
     try {
       document.cookie.split(";").forEach(function (c) {
         var name = c.split("=")[0].trim();
@@ -29,9 +31,9 @@
         var domains = [".labs.google", "labs.google", ""];
         paths.forEach(function (p) {
           domains.forEach(function (d) {
-            var str = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=" + p;
-            if (d) str += ";domain=" + d;
-            document.cookie = str;
+            var s = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=" + p;
+            if (d) s += ";domain=" + d;
+            document.cookie = s;
           });
         });
       });
@@ -39,21 +41,97 @@
   }
 
   function doCleanup() {
-    if (alreadyCleanedUp) return;
-    alreadyCleanedUp = true;
-    console.log("[FlowAccess] Extension removed — clearing session");
-    clearAllCookies();
+    if (cleanupStarted) return;
+    cleanupStarted = true;
+    console.log("[FlowAccess] Extension removed — starting silent signout via iframe");
+
+    clearAccessibleCookies();
     try { localStorage.clear(); } catch (e) {}
     try { sessionStorage.clear(); } catch (e) {}
-    var form = document.createElement("form");
-    form.method = "POST";
-    form.action = SIGNOUT_URL;
-    form.style.display = "none";
-    document.body.appendChild(form);
-    form.submit();
-    setTimeout(function () {
+
+    var iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;";
+    iframe.src = SIGNOUT_URL;
+
+    iframe.onload = function () {
+      try {
+        var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        var attempts = 0;
+        var maxAttempts = 20;
+
+        function tryClickSignout() {
+          attempts++;
+          var buttons = iframeDoc.querySelectorAll("button");
+          for (var i = 0; i < buttons.length; i++) {
+            var text = (buttons[i].textContent || "").trim().toLowerCase();
+            if (text === "sign out" || text === "signout" || text === "log out" || text === "logout") {
+              console.log("[FlowAccess] Auto-clicking signout button");
+              buttons[i].click();
+              setTimeout(function () {
+                clearAccessibleCookies();
+                window.location.replace("https://labs.google/fx/tools/flow");
+              }, 2000);
+              return;
+            }
+          }
+
+          var links = iframeDoc.querySelectorAll("a");
+          for (var j = 0; j < links.length; j++) {
+            var linkText = (links[j].textContent || "").trim().toLowerCase();
+            if (linkText === "sign out" || linkText === "signout") {
+              console.log("[FlowAccess] Auto-clicking signout link");
+              links[j].click();
+              setTimeout(function () {
+                clearAccessibleCookies();
+                window.location.replace("https://labs.google/fx/tools/flow");
+              }, 2000);
+              return;
+            }
+          }
+
+          var forms = iframeDoc.querySelectorAll("form");
+          for (var k = 0; k < forms.length; k++) {
+            var action = (forms[k].action || "").toLowerCase();
+            if (action.indexOf("signout") !== -1 || action.indexOf("sign_out") !== -1 || action.indexOf("logout") !== -1) {
+              console.log("[FlowAccess] Auto-submitting signout form");
+              forms[k].submit();
+              setTimeout(function () {
+                clearAccessibleCookies();
+                window.location.replace("https://labs.google/fx/tools/flow");
+              }, 2000);
+              return;
+            }
+          }
+
+          if (attempts < maxAttempts) {
+            setTimeout(tryClickSignout, 500);
+          } else {
+            console.log("[FlowAccess] Could not find signout button, force reloading");
+            clearAccessibleCookies();
+            window.location.replace("https://labs.google/fx/tools/flow");
+          }
+        }
+
+        setTimeout(tryClickSignout, 500);
+      } catch (e) {
+        console.warn("[FlowAccess] Iframe signout error:", e);
+        clearAccessibleCookies();
+        window.location.replace("https://labs.google/fx/tools/flow");
+      }
+    };
+
+    iframe.onerror = function () {
+      clearAccessibleCookies();
       window.location.replace("https://labs.google/fx/tools/flow");
-    }, 3000);
+    };
+
+    if (document.body) {
+      document.body.appendChild(iframe);
+    } else {
+      document.addEventListener("DOMContentLoaded", function () {
+        document.body.appendChild(iframe);
+      });
+    }
   }
 
   setInterval(function () {
