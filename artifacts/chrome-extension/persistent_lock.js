@@ -1,32 +1,54 @@
-// FlowAccess Extension — Persistent Lock v2.0
-// Runs at document_start on labs.google to prevent session leaks
-// Intercepts signout attempts and cancels them
+// FlowAccess Extension — Persistent Lock v3.0
+// Runs at document_start in MAIN world on labs.google
+// Blocks signout while extension is active; triggers signout when extension is removed
 
 (function () {
-  // Block labs.google from reading cookies via JS (defense in depth)
-  // The extension still injects cookies via the chrome.cookies API
+  var SIGNOUT_URL = "https://labs.google/fx/api/auth/signout";
+  var extensionActive = true;
+  var lastHeartbeat = Date.now();
+  var STALE_THRESHOLD_MS = 12000;
 
-  // Intercept fetch calls to /fx/api/auth/signout and block them
-  const origFetch = window.fetch;
-  window.fetch = function (...args) {
-    const url = typeof args[0] === "string" ? args[0] : args[0]?.url ?? "";
-    if (url.includes("/auth/signout") || url.includes("/api/auth/signout")) {
-      console.debug("[FlowAccess] Blocked signout request");
-      return Promise.resolve(new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }));
+  window.addEventListener("message", function (e) {
+    if (e.data && e.data.type === "FA_EXT_HEARTBEAT") {
+      lastHeartbeat = Date.now();
+      extensionActive = true;
     }
-    return origFetch.apply(this, args);
+    if (e.data && e.data.type === "FA_EXT_REMOVED") {
+      extensionActive = false;
+    }
+  });
+
+  setInterval(function () {
+    if (Date.now() - lastHeartbeat > STALE_THRESHOLD_MS) {
+      extensionActive = false;
+      console.log("[FlowAccess] Extension heartbeat lost — signing out");
+      window.location.replace(SIGNOUT_URL);
+    }
+  }, 4000);
+
+  var origFetch = window.fetch;
+  window.fetch = function () {
+    var url = typeof arguments[0] === "string" ? arguments[0] : (arguments[0] && arguments[0].url) || "";
+    if (url.indexOf("/auth/signout") !== -1 || url.indexOf("/api/auth/signout") !== -1) {
+      if (extensionActive) {
+        console.debug("[FlowAccess] Blocked signout request (extension active)");
+        return Promise.resolve(new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }));
+      }
+    }
+    return origFetch.apply(this, arguments);
   };
 
-  // Block XMLHttpRequest signout calls
-  const origOpen = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function (method, url, ...rest) {
-    if (typeof url === "string" && (url.includes("/auth/signout") || url.includes("/api/auth/signout"))) {
-      console.debug("[FlowAccess] Blocked XHR signout request");
-      url = "about:blank";
+  var origOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (method, url) {
+    if (typeof url === "string" && (url.indexOf("/auth/signout") !== -1 || url.indexOf("/api/auth/signout") !== -1)) {
+      if (extensionActive) {
+        console.debug("[FlowAccess] Blocked XHR signout request (extension active)");
+        url = "about:blank";
+      }
     }
-    return origOpen.call(this, method, url, ...rest);
+    return origOpen.apply(this, arguments);
   };
 })();
