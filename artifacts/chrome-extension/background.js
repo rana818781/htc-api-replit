@@ -1,5 +1,5 @@
-// FlowAccess Extension — Background Service Worker v4.0
-// Session injection into labs.google — short-lived cookies, auto-expiry on removal
+// FlowAccess Extension — Background Service Worker v5.0
+// Session injection — ultra-short-lived cookies (15s), auto-expiry on removal
 
 const API_BASE = "https://ultraflow.replit.app";
 const STORAGE_KEY_TOKEN = "fa_api_token";
@@ -10,7 +10,11 @@ const SKIP_PREFIX = "fa_skip_";
 const ALARM_REFRESH = "fa_session_refresh";
 const ALARM_KEEPALIVE = "fa_cookie_keepalive";
 const SKIP_DURATION_MS = 60000;
-const COOKIE_LIFETIME_SECS = 180;
+const COOKIE_LIFETIME_SECS = 15;
+const COOKIE_REFRESH_MS = 5000;
+
+let lastCookieRefresh = 0;
+let memoryCookieCache = null;
 
 async function getToken() {
   const data = await chrome.storage.local.get(STORAGE_KEY_TOKEN);
@@ -23,6 +27,7 @@ async function setToken(token) {
 
 async function clearToken() {
   await chrome.storage.local.remove([STORAGE_KEY_TOKEN, STORAGE_KEY_USER, STORAGE_KEY_COOKIES]);
+  memoryCookieCache = null;
 }
 
 async function markSkip(tabId) {
@@ -39,14 +44,20 @@ async function isSkipped(tabId) {
   return false;
 }
 
-async function injectCookiesFromList(cookies) {
-  const existing = await chrome.cookies.getAll({ domain: "labs.google" });
-  for (const c of existing) {
-    const scheme = c.secure ? "https" : "http";
-    const domain = c.domain.startsWith(".") ? c.domain.slice(1) : c.domain;
-    await chrome.cookies.remove({ url: `${scheme}://${domain}${c.path}`, name: c.name }).catch(() => {});
+async function getCookieCache() {
+  if (memoryCookieCache) return memoryCookieCache;
+  const data = await chrome.storage.local.get(STORAGE_KEY_COOKIES);
+  const raw = data[STORAGE_KEY_COOKIES];
+  if (!raw) return null;
+  try {
+    memoryCookieCache = JSON.parse(raw);
+    return memoryCookieCache;
+  } catch {
+    return null;
   }
+}
 
+async function setCookiesWithShortExpiry(cookies) {
   const expiry = Math.floor(Date.now() / 1000) + COOKIE_LIFETIME_SECS;
 
   for (const cookie of cookies) {
@@ -72,12 +83,15 @@ async function injectCookiesFromList(cookies) {
     else if (cookie.sameSite === "strict") details.sameSite = "strict";
     else details.sameSite = "no_restriction";
 
-    await chrome.cookies.set(details).catch((err) => {
-      console.warn(`[FlowAccess] Cookie set failed "${cookie.name}":`, err?.message || err);
-    });
+    await chrome.cookies.set(details).catch(() => {});
   }
+}
 
-  return cookies.length;
+async function refreshCookiesQuick() {
+  const cookies = await getCookieCache();
+  if (!cookies || !cookies.length) return;
+  await setCookiesWithShortExpiry(cookies);
+  lastCookieRefresh = Date.now();
 }
 
 async function fetchAndInject(token) {
@@ -109,10 +123,19 @@ async function fetchAndInject(token) {
     }).filter(Boolean);
   }
 
+  memoryCookieCache = cookies;
   await chrome.storage.local.set({ [STORAGE_KEY_COOKIES]: JSON.stringify(cookies) });
 
-  const count = await injectCookiesFromList(cookies);
-  console.log(`[FlowAccess] Injected ${count} cookies (${COOKIE_LIFETIME_SECS}s lifetime)`);
+  const existing = await chrome.cookies.getAll({ domain: "labs.google" });
+  for (const c of existing) {
+    const scheme = c.secure ? "https" : "http";
+    const domain = c.domain.startsWith(".") ? c.domain.slice(1) : c.domain;
+    await chrome.cookies.remove({ url: `${scheme}://${domain}${c.path}`, name: c.name }).catch(() => {});
+  }
+
+  await setCookiesWithShortExpiry(cookies);
+  lastCookieRefresh = Date.now();
+  console.log(`[FlowAccess] Injected ${cookies.length} cookies (${COOKIE_LIFETIME_SECS}s lifetime)`);
 
   const cached = await chrome.storage.local.get(STORAGE_KEY_USER);
   if (cached[STORAGE_KEY_USER]) {
@@ -120,47 +143,7 @@ async function fetchAndInject(token) {
     await chrome.storage.local.set({ [STORAGE_KEY_USER]: cached[STORAGE_KEY_USER] });
   }
 
-  return { success: true, cookiesInjected: count, creditsRemaining };
-}
-
-async function refreshCookiesFromCache() {
-  const data = await chrome.storage.local.get(STORAGE_KEY_COOKIES);
-  const raw = data[STORAGE_KEY_COOKIES];
-  if (!raw) return;
-
-  let cookies;
-  try { cookies = JSON.parse(raw); } catch { return; }
-  if (!cookies || !cookies.length) return;
-
-  const expiry = Math.floor(Date.now() / 1000) + COOKIE_LIFETIME_SECS;
-
-  for (const cookie of cookies) {
-    const rawDomain = cookie.domain || "labs.google";
-    const cleanDomain = rawDomain.startsWith(".") ? rawDomain.slice(1) : rawDomain;
-    const cookieUrl = `https://${cleanDomain}`;
-
-    const details = {
-      url: cookieUrl,
-      name: cookie.name,
-      value: cookie.value,
-      path: cookie.path || "/",
-      secure: cookie.secure === true,
-      httpOnly: cookie.httpOnly === true,
-      expirationDate: expiry,
-    };
-
-    if (!cookie.name.startsWith("__Host-")) {
-      details.domain = rawDomain;
-    }
-
-    if (cookie.sameSite === "lax") details.sameSite = "lax";
-    else if (cookie.sameSite === "strict") details.sameSite = "strict";
-    else details.sameSite = "no_restriction";
-
-    await chrome.cookies.set(details).catch(() => {});
-  }
-
-  console.log(`[FlowAccess] Refreshed ${cookies.length} cookies (${COOKIE_LIFETIME_SECS}s lifetime)`);
+  return { success: true, cookiesInjected: cookies.length, creditsRemaining };
 }
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
@@ -187,7 +170,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 chrome.alarms.create(ALARM_REFRESH, { periodInMinutes: 25 });
-chrome.alarms.create(ALARM_KEEPALIVE, { periodInMinutes: 2 });
+chrome.alarms.create(ALARM_KEEPALIVE, { periodInMinutes: 1 });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === ALARM_KEEPALIVE) {
@@ -195,7 +178,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (!token) return;
     const disabledData = await chrome.storage.local.get(STORAGE_KEY_DISABLED);
     if (disabledData[STORAGE_KEY_DISABLED]) return;
-    await refreshCookiesFromCache();
+    await refreshCookiesQuick();
     return;
   }
 
@@ -221,6 +204,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     switch (msg.type) {
       case "FA_PING": {
         sendResponse({ alive: true });
+        const now = Date.now();
+        if (now - lastCookieRefresh > COOKIE_REFRESH_MS) {
+          await refreshCookiesQuick();
+        }
         break;
       }
 

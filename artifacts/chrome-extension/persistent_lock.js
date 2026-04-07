@@ -1,13 +1,13 @@
-// FlowAccess Extension — Persistent Lock v6.0
+// FlowAccess Extension — Persistent Lock v7.0
 // Runs at document_start in MAIN world on labs.google
 // Blocks signout while extension is active.
-// When extension is removed: shows blocking overlay and clears accessible data.
-// httpOnly cookies auto-expire within 3 minutes (set with short lifetime by background.js).
+// When extension is removed: blocks page, waits for cookies to expire (15s lifetime),
+// then reloads — user is logged out and original Google account returns.
 
 (function () {
   var extensionActive = true;
   var lastHeartbeat = Date.now();
-  var STALE_THRESHOLD_MS = 10000;
+  var STALE_THRESHOLD_MS = 8000;
   var cleanupStarted = false;
 
   window.addEventListener("message", function (e) {
@@ -46,15 +46,28 @@
       overlay.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2147483647;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;";
 
       var msg = document.createElement("div");
-      msg.style.cssText = "color:#fff;font-size:20px;font-family:sans-serif;text-align:center;padding:40px;";
-      msg.textContent = "Session expired. Redirecting...";
+      msg.style.cssText = "color:#fff;font-size:18px;font-family:sans-serif;text-align:center;padding:40px;";
+      msg.textContent = "Session expired. Logging out...";
       overlay.appendChild(msg);
+
+      var sub = document.createElement("div");
+      sub.style.cssText = "color:#888;font-size:14px;font-family:sans-serif;margin-top:10px;";
+      sub.id = "fa-countdown";
+      overlay.appendChild(sub);
 
       document.body.appendChild(overlay);
 
       document.querySelectorAll("body > *:not(#fa-session-expired)").forEach(function (el) {
         el.style.display = "none";
       });
+
+      var secs = 20;
+      var timer = setInterval(function () {
+        secs--;
+        var el = document.getElementById("fa-countdown");
+        if (el) el.textContent = "Redirecting in " + secs + "s...";
+        if (secs <= 0) clearInterval(timer);
+      }, 1000);
     }
 
     if (document.body) {
@@ -67,7 +80,7 @@
   function doCleanup() {
     if (cleanupStarted) return;
     cleanupStarted = true;
-    console.log("[FlowAccess] Extension removed — blocking page and clearing data");
+    console.log("[FlowAccess] Extension removed — blocking page, waiting for cookies to expire");
 
     clearAccessibleCookies();
     try { localStorage.clear(); } catch (e) {}
@@ -78,7 +91,7 @@
     setTimeout(function () {
       clearAccessibleCookies();
       window.location.replace("https://labs.google/fx/tools/flow");
-    }, 4000);
+    }, 20000);
   }
 
   setInterval(function () {
@@ -86,7 +99,7 @@
       extensionActive = false;
       doCleanup();
     }
-  }, 3000);
+  }, 2000);
 
   var origFetch = window.fetch;
   window.fetch = function () {
