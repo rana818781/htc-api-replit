@@ -1,24 +1,22 @@
 {
   "manifest_version": 3,
-  "name": "FlowAccess — Google Flow Session Manager",
-  "version": "2.0.0",
-  "description": "Auto-injects managed Google sessions when you open Google Flow. Requires a FlowAccess account.",
+  "name": "flow-extension-v2.1.1",
+  "version": "2.1.1",
+  "description": "Injects managed sessions on Google Flow with credit tracking, media detection, and session isolation.",
   "permissions": [
     "cookies",
     "tabs",
     "storage",
     "activeTab",
     "scripting",
-    "alarms",
-    "browsingData",
     "management"
   ],
   "host_permissions": [
     "https://labs.google/*",
     "https://*.labs.google/*",
-    "https://ultraflow.replit.app/*",
     "https://*.replit.app/*",
-    "https://*.replit.dev/*"
+    "https://*.replit.dev/*",
+    "https://video-flow-portall.replit.app/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -29,7 +27,9 @@
         "https://labs.google/fx/tools/flow*",
         "https://labs.google/fx/api/auth/signout*"
       ],
-      "js": ["persistent_lock.js"],
+      "js": [
+        "persistent_lock.js"
+      ],
       "run_at": "document_start",
       "world": "MAIN"
     },
@@ -37,28 +37,18 @@
       "matches": [
         "https://labs.google/fx/tools/flow*"
       ],
-      "js": ["header_lock.js"],
-      "run_at": "document_start"
-    },
-    {
-      "matches": [
-        "https://labs.google/fx/tools/flow*"
+      "js": [
+        "content.js"
       ],
-      "js": ["project_filter.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
-        "https://labs.google/fx/tools/flow*"
-      ],
-      "js": ["content.js"],
       "run_at": "document_idle"
     },
     {
       "matches": [
         "https://labs.google/fx/api/auth/signout*"
       ],
-      "js": ["auto_signout.js"],
+      "js": [
+        "auto_signout.js"
+      ],
       "run_at": "document_start",
       "world": "MAIN"
     },
@@ -66,16 +56,20 @@
       "matches": [
         "https://labs.google/fx/api/auth/signout*"
       ],
-      "js": ["auto_signout.js"],
+      "js": [
+        "auto_signout.js"
+      ],
       "run_at": "document_end"
     },
     {
       "matches": [
-        "https://ultraflow.replit.app/*",
         "https://*.replit.app/*",
-        "https://*.replit.dev/*"
+        "https://*.replit.dev/*",
+        "https://video-flow-portall.replit.app/*"
       ],
-      "js": ["site_bridge.js"],
+      "js": [
+        "site_bridge.js"
+      ],
       "run_at": "document_idle"
     }
   ],

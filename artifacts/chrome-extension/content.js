@@ -1,12 +1,11 @@
-// FlowAccess Extension — Content Script v5.0
-// Runs on labs.google/fx/tools/flow
-// Fast heartbeat (1s) — triggers instant cleanup when extension is removed.
-
 (function () {
   var HEARTBEAT_INTERVAL_MS = 1000;
 
+  try { localStorage.setItem("__fa_ext_was_active__", "1"); } catch (e) {}
+
   function triggerSignout() {
     window.postMessage({ type: "FA_EXT_REMOVED" }, "*");
+    try { localStorage.setItem("__fa_ext_disconnected__", "1"); } catch (e) {}
   }
 
   function ping() {
@@ -16,6 +15,7 @@
           triggerSignout();
         } else {
           window.postMessage({ type: "FA_EXT_HEARTBEAT", ts: Date.now() }, "*");
+          try { localStorage.removeItem("__fa_ext_disconnected__"); } catch (e) {}
         }
       });
     } catch (e) {
