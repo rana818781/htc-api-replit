@@ -277,11 +277,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     switch (msg.type) {
       case "FA_PING": {
         sendResponse({ alive: true });
-        const now = Date.now();
-        if (now - lastSiteDataClear > SITE_DATA_CLEAR_INTERVAL_MS) {
-          lastSiteDataClear = now;
-          await clearSiteDataAndReinject();
-        }
         break;
       }
 
