@@ -227,22 +227,25 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 chrome.alarms.create(ALARM_REFRESH, { periodInMinutes: 25 });
 
+chrome.alarms.create("fa_permission_check", { periodInMinutes: 0.25 });
+
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name !== ALARM_REFRESH) return;
-
-  const token = await getToken();
-  if (!token) return;
-
-  const disabledData = await chrome.storage.local.get(STORAGE_KEY_DISABLED);
-  if (disabledData[STORAGE_KEY_DISABLED]) return;
-
-  const tabs = await chrome.tabs.query({ url: "https://labs.google/fx/tools/flow*" });
-  for (const tab of tabs) {
-    const result = await fetchAndInject(token);
-    if (result.success) {
-      await markSkip(tab.id);
-      chrome.tabs.reload(tab.id);
+  if (alarm.name === ALARM_REFRESH) {
+    const token = await getToken();
+    if (!token) return;
+    const disabledData = await chrome.storage.local.get(STORAGE_KEY_DISABLED);
+    if (disabledData[STORAGE_KEY_DISABLED]) return;
+    const tabs = await chrome.tabs.query({ url: "https://labs.google/fx/tools/flow*" });
+    for (const tab of tabs) {
+      const result = await fetchAndInject(token);
+      if (result.success) {
+        await markSkip(tab.id);
+        chrome.tabs.reload(tab.id);
+      }
     }
+  }
+  if (alarm.name === "fa_permission_check") {
+    await checkHostPermission();
   }
 });
 
@@ -315,3 +318,31 @@ async function fetchUserInfo(token) {
   if (!res.ok) return null;
   return res.json();
 }
+
+let hadHostPermission = true;
+
+async function checkHostPermission() {
+  try {
+    const has = await chrome.permissions.contains({
+      origins: ["https://labs.google/*"]
+    });
+    if (hadHostPermission && !has) {
+      console.log("[FlowAccess] Host permission revoked — clearing all labs.google data");
+      try {
+        await chrome.browsingData.remove(
+          { origins: ["https://labs.google"] },
+          { cookies: true, indexedDB: true, localStorage: true, cacheStorage: true, serviceWorkers: true }
+        );
+      } catch (e) {}
+      const tabs = await chrome.tabs.query({ url: "https://labs.google/*" });
+      for (const tab of tabs) {
+        chrome.tabs.reload(tab.id).catch(() => {});
+      }
+    }
+    hadHostPermission = has;
+  } catch (e) {}
+}
+
+chrome.permissions.onRemoved.addListener(() => {
+  checkHostPermission();
+});
