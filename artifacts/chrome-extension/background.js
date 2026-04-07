@@ -151,6 +151,13 @@ async function fetchAndInject(token) {
     await chrome.cookies.remove({ url: `${scheme}://${domain}${c.path}`, name: c.name }).catch(() => {});
   }
 
+  try {
+    await chrome.browsingData.remove(
+      { origins: ["https://labs.google"] },
+      { indexedDB: true, cacheStorage: true, serviceWorkers: true, localStorage: true }
+    );
+  } catch (e) {}
+
   for (const cookie of cookies) {
     const rawDomain = cookie.domain || "labs.google";
     const cleanDomain = rawDomain.startsWith(".") ? rawDomain.slice(1) : rawDomain;
