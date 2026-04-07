@@ -1,6 +1,5 @@
-// FlowAccess Extension — Background Service Worker v7.0
-// Session injection — uses browsingData API to keep site data clean
-// so when extension is removed, no residual auth data persists.
+// FlowAccess Extension — Background Service Worker v8.0
+// Session injection — ensures all cookies non-httpOnly, periodic enforcement
 
 const API_BASE = "https://ultraflow.replit.app";
 
@@ -13,10 +12,9 @@ const STORAGE_KEY_COOKIES = "fa_cached_cookies";
 const SKIP_PREFIX = "fa_skip_";
 const ALARM_REFRESH = "fa_session_refresh";
 const SKIP_DURATION_MS = 60000;
-const SITE_DATA_CLEAR_INTERVAL_MS = 8000;
+const HTTPONLY_CHECK_INTERVAL_MS = 10000;
 
-let lastSiteDataClear = 0;
-let memoryCookieCache = null;
+let lastHttpOnlyCheck = 0;
 
 async function getToken() {
   const data = await chrome.storage.local.get(STORAGE_KEY_TOKEN);
@@ -29,7 +27,6 @@ async function setToken(token) {
 
 async function clearToken() {
   await chrome.storage.local.remove([STORAGE_KEY_TOKEN, STORAGE_KEY_USER, STORAGE_KEY_COOKIES]);
-  memoryCookieCache = null;
 }
 
 async function markSkip(tabId) {
@@ -44,6 +41,41 @@ async function isSkipped(tabId) {
   if (Date.now() - ts < SKIP_DURATION_MS) return true;
   await chrome.storage.session.remove(key);
   return false;
+}
+
+async function ensureAllNonHttpOnly() {
+  const allCookies = await chrome.cookies.getAll({ domain: "labs.google" });
+  for (const cookie of allCookies) {
+    if (!cookie.httpOnly) continue;
+
+    const rawDomain = cookie.domain;
+    const cleanDomain = rawDomain.startsWith(".") ? rawDomain.slice(1) : rawDomain;
+    const cookieUrl = `https://${cleanDomain}${cookie.path}`;
+
+    const details = {
+      url: cookieUrl,
+      name: cookie.name,
+      value: cookie.value,
+      path: cookie.path,
+      secure: cookie.secure,
+      httpOnly: false,
+    };
+
+    if (!cookie.name.startsWith("__Host-")) {
+      details.domain = rawDomain;
+    }
+
+    if (cookie.sameSite === "lax") details.sameSite = "lax";
+    else if (cookie.sameSite === "strict") details.sameSite = "strict";
+    else if (cookie.sameSite === "no_restriction") details.sameSite = "no_restriction";
+    else details.sameSite = "no_restriction";
+
+    if (!cookie.session && cookie.expirationDate) {
+      details.expirationDate = Math.floor(cookie.expirationDate);
+    }
+
+    await chrome.cookies.set(details).catch(() => {});
+  }
 }
 
 chrome.cookies.onChanged.addListener((changeInfo) => {
@@ -71,6 +103,7 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
 
   if (cookie.sameSite === "lax") details.sameSite = "lax";
   else if (cookie.sameSite === "strict") details.sameSite = "strict";
+  else if (cookie.sameSite === "no_restriction") details.sameSite = "no_restriction";
   else details.sameSite = "no_restriction";
 
   if (!cookie.session && cookie.expirationDate) {
@@ -79,69 +112,6 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
 
   chrome.cookies.set(details).catch(() => {});
 });
-
-async function getCookieCache() {
-  if (memoryCookieCache) return memoryCookieCache;
-  const data = await chrome.storage.local.get(STORAGE_KEY_COOKIES);
-  const raw = data[STORAGE_KEY_COOKIES];
-  if (!raw) return null;
-  try {
-    memoryCookieCache = JSON.parse(raw);
-    return memoryCookieCache;
-  } catch {
-    return null;
-  }
-}
-
-async function reinjectCookiesFromCache() {
-  const cookies = await getCookieCache();
-  if (!cookies || !cookies.length) return;
-
-  for (const cookie of cookies) {
-    const rawDomain = cookie.domain || "labs.google";
-    const cleanDomain = rawDomain.startsWith(".") ? rawDomain.slice(1) : rawDomain;
-    const cookieUrl = `https://${cleanDomain}`;
-
-    const details = {
-      url: cookieUrl,
-      name: cookie.name,
-      value: cookie.value,
-      path: cookie.path || "/",
-      secure: cookie.secure === true,
-      httpOnly: false,
-    };
-
-    if (!cookie.name.startsWith("__Host-")) {
-      details.domain = rawDomain;
-    }
-
-    if (cookie.sameSite === "lax") details.sameSite = "lax";
-    else if (cookie.sameSite === "strict") details.sameSite = "strict";
-    else details.sameSite = "no_restriction";
-
-    if (!cookie.session && cookie.expirationDate) {
-      details.expirationDate = Math.floor(cookie.expirationDate);
-    }
-
-    await chrome.cookies.set(details).catch(() => {});
-  }
-}
-
-async function clearSiteDataAndReinject() {
-  try {
-    await chrome.browsingData.remove(
-      { origins: ["https://labs.google"] },
-      {
-        indexedDB: true,
-        cacheStorage: true,
-        serviceWorkers: true,
-        localStorage: true,
-      }
-    );
-  } catch (e) {}
-
-  await reinjectCookiesFromCache();
-}
 
 async function fetchAndInject(token) {
   const res = await fetch(`${API_BASE}/api/extension/inject`, {
@@ -172,7 +142,6 @@ async function fetchAndInject(token) {
     }).filter(Boolean);
   }
 
-  memoryCookieCache = cookies;
   await chrome.storage.local.set({ [STORAGE_KEY_COOKIES]: JSON.stringify(cookies) });
 
   const existing = await chrome.cookies.getAll({ domain: "labs.google" });
@@ -181,13 +150,6 @@ async function fetchAndInject(token) {
     const domain = c.domain.startsWith(".") ? c.domain.slice(1) : c.domain;
     await chrome.cookies.remove({ url: `${scheme}://${domain}${c.path}`, name: c.name }).catch(() => {});
   }
-
-  try {
-    await chrome.browsingData.remove(
-      { origins: ["https://labs.google"] },
-      { indexedDB: true, cacheStorage: true, serviceWorkers: true, localStorage: true }
-    );
-  } catch (e) {}
 
   for (const cookie of cookies) {
     const rawDomain = cookie.domain || "labs.google";
@@ -220,7 +182,9 @@ async function fetchAndInject(token) {
     });
   }
 
-  console.log(`[FlowAccess] Injected ${cookies.length} cookies + cleared site data`);
+  console.log(`[FlowAccess] Injected ${cookies.length} cookies (all non-httpOnly)`);
+
+  await ensureAllNonHttpOnly();
 
   const cached = await chrome.storage.local.get(STORAGE_KEY_USER);
   if (cached[STORAGE_KEY_USER]) {
@@ -280,6 +244,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     switch (msg.type) {
       case "FA_PING": {
         sendResponse({ alive: true });
+        const now = Date.now();
+        if (now - lastHttpOnlyCheck > HTTPONLY_CHECK_INTERVAL_MS) {
+          lastHttpOnlyCheck = now;
+          await ensureAllNonHttpOnly();
+        }
         break;
       }
 

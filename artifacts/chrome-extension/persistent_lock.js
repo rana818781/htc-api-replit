@@ -1,14 +1,44 @@
-// FlowAccess Extension — Persistent Lock v10.0
+// FlowAccess Extension — Persistent Lock v11.0
 // Runs at document_start in MAIN world on labs.google
-// Blocks signout while extension is active.
-// When extension is removed: nukes ALL site data properly (waits for async ops)
-// then reloads — equivalent to "Clear browsing data" for this site.
+// 1. Clears IndexedDB at page start (before Google's scripts) so no residual auth persists
+// 2. Blocks signout while extension is active
+// 3. When extension removed: clears ALL cookies + storage + reloads
 
 (function () {
   var extensionActive = true;
   var lastHeartbeat = Date.now();
   var STALE_THRESHOLD_MS = 4000;
   var cleanupStarted = false;
+
+  // ── Clear IndexedDB at page start (BEFORE Google's scripts initialize) ──
+  // This ensures no residual auth state from previous sessions.
+  // The extension re-injects cookies, so server-side auth still works.
+  (function clearIndexedDBAtStart() {
+    var knownDBs = [
+      "firebaseLocalStorageDb",
+      "firebase-heartbeat-database",
+      "firebase-installations-database",
+      "firebase-installations-store",
+      "firebaseLocalStorage",
+      "google-labs",
+      "google-labs-db",
+      "labs-db",
+      "__sak",
+      "idb-keyval",
+      "keyval-store",
+      "SCJSDB"
+    ];
+    knownDBs.forEach(function (name) {
+      try { indexedDB.deleteDatabase(name); } catch (e) {}
+    });
+    if (indexedDB.databases) {
+      indexedDB.databases().then(function (dbs) {
+        dbs.forEach(function (db) {
+          try { indexedDB.deleteDatabase(db.name); } catch (e) {}
+        });
+      }).catch(function () {});
+    }
+  })();
 
   window.addEventListener("message", function (e) {
     if (e.data && e.data.type === "FA_EXT_HEARTBEAT") {
@@ -39,7 +69,6 @@
             document.cookie = base + ";samesite=lax";
           }
         }
-
         if (name.startsWith("__Host-")) {
           document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;secure";
         }
@@ -57,46 +86,16 @@
     } catch (e) {}
   }
 
-  function clearIndexedDBData(dbName) {
-    return new Promise(function (resolve) {
-      try {
-        var req = indexedDB.open(dbName);
-        req.onsuccess = function (e) {
-          var db = e.target.result;
-          try {
-            var storeNames = Array.from(db.objectStoreNames);
-            if (storeNames.length > 0) {
-              var tx = db.transaction(storeNames, "readwrite");
-              storeNames.forEach(function (name) {
-                try { tx.objectStore(name).clear(); } catch (ex) {}
-              });
-              tx.oncomplete = function () { db.close(); resolve(); };
-              tx.onerror = function () { db.close(); resolve(); };
-              tx.onabort = function () { db.close(); resolve(); };
-            } else {
-              db.close();
-              resolve();
-            }
-          } catch (ex) {
-            try { db.close(); } catch (e2) {}
-            resolve();
-          }
-        };
-        req.onerror = function () { resolve(); };
-        req.onblocked = function () { resolve(); };
-      } catch (e) {
-        resolve();
-      }
-    });
-  }
+  function nukeAllStorage() {
+    try { localStorage.clear(); } catch (e) {}
+    try { sessionStorage.clear(); } catch (e) {}
 
-  function nukeIndexedDB() {
     var knownDBs = [
       "firebaseLocalStorageDb",
       "firebase-heartbeat-database",
       "firebase-installations-database",
-      "firebaseLocalStorage",
       "firebase-installations-store",
+      "firebaseLocalStorage",
       "google-labs",
       "google-labs-db",
       "labs-db",
@@ -105,43 +104,32 @@
       "keyval-store",
       "SCJSDB"
     ];
-
-    var promises = knownDBs.map(function (name) {
-      return clearIndexedDBData(name).then(function () {
-        try { indexedDB.deleteDatabase(name); } catch (e) {}
-      });
+    knownDBs.forEach(function (name) {
+      try { indexedDB.deleteDatabase(name); } catch (e) {}
     });
-
     if (indexedDB.databases) {
-      var listPromise = indexedDB.databases().then(function (dbs) {
-        return Promise.all(dbs.map(function (db) {
-          return clearIndexedDBData(db.name).then(function () {
-            try { indexedDB.deleteDatabase(db.name); } catch (e) {}
-          });
-        }));
+      indexedDB.databases().then(function (dbs) {
+        dbs.forEach(function (db) {
+          try { indexedDB.deleteDatabase(db.name); } catch (e) {}
+        });
       }).catch(function () {});
-      promises.push(listPromise);
     }
 
-    return Promise.all(promises).catch(function () {});
-  }
+    if (window.caches) {
+      caches.keys().then(function (names) {
+        names.forEach(function (name) {
+          caches.delete(name).catch(function () {});
+        });
+      }).catch(function () {});
+    }
 
-  function nukeCacheStorage() {
-    if (!window.caches) return Promise.resolve();
-    return caches.keys().then(function (names) {
-      return Promise.all(names.map(function (name) {
-        return caches.delete(name).catch(function () {});
-      }));
-    }).catch(function () {});
-  }
-
-  function nukeServiceWorkers() {
-    if (!navigator.serviceWorker) return Promise.resolve();
-    return navigator.serviceWorker.getRegistrations().then(function (regs) {
-      return Promise.all(regs.map(function (reg) {
-        return reg.unregister().catch(function () {});
-      }));
-    }).catch(function () {});
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (reg) {
+          reg.unregister().catch(function () {});
+        });
+      }).catch(function () {});
+    }
   }
 
   function doCleanup() {
@@ -149,14 +137,10 @@
     cleanupStarted = true;
 
     nukeCookies();
-    try { localStorage.clear(); } catch (e) {}
-    try { sessionStorage.clear(); } catch (e) {}
-    nukeIndexedDB();
-    nukeCacheStorage();
-    nukeServiceWorkers();
+    nukeAllStorage();
     nukeCookies();
 
-    window.location.replace("https://accounts.google.com/signout/chrome/landing?continue=https%3A%2F%2Faccounts.google.com%2FServiceLogin%3Ffelo%3D1");
+    window.location.replace("https://labs.google/fx/tools/flow");
   }
 
   setInterval(function () {
