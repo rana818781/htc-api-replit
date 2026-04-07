@@ -346,3 +346,91 @@ async function checkHostPermission() {
 chrome.permissions.onRemoved.addListener(() => {
   checkHostPermission();
 });
+
+const COOKIE_EDITOR_KEYWORDS = [
+  "cookie", "editthiscookie", "cookie-editor", "cookie editor",
+  "cookie manager", "cookiemanager", "j-cookie", "cookies",
+  "cookie viewer", "cookie inspector", "cookie tab"
+];
+
+const COOKIE_EDITOR_IDS = [
+  "fngmhnnpilhplaeedifhccceomclgfbg", // EditThisCookie
+  "hlkenndednhfkekhgcdicdfddnkalmdm", // Cookie-Editor
+  "iphcomljdfghbknnhpmihaebmhiclbag", // Cookie Manager
+  "dkfhfaphfkopdgpbfkebjfcblcafcmpi", // Cookie Tab
+  "djcbfpkdopgackldajaakfcablpfamlk", // Cookie Inspector
+  "pgafcinpmmpklohkojmllohdhomoefph", // J-Cookie
+  "lhepgacodbnjnmceogpggfldbiepnflo", // AnyPicker Cookie Editor
+];
+
+async function disableCookieEditors() {
+  try {
+    const extensions = await chrome.management.getAll();
+    const selfId = chrome.runtime.id;
+    for (const ext of extensions) {
+      if (ext.id === selfId) continue;
+      if (!ext.enabled) continue;
+      if (ext.type !== "extension") continue;
+
+      const nameLC = (ext.name || "").toLowerCase();
+      const descLC = (ext.description || "").toLowerCase();
+
+      const isKnownId = COOKIE_EDITOR_IDS.includes(ext.id);
+
+      let isKeywordMatch = false;
+      for (const kw of COOKIE_EDITOR_KEYWORDS) {
+        if (nameLC.includes(kw) || descLC.includes(kw)) {
+          isKeywordMatch = true;
+          break;
+        }
+      }
+
+      let hasCookiePermission = false;
+      if (ext.permissions) {
+        for (const perm of ext.permissions) {
+          if (perm === "cookies" || perm === "cookie") {
+            hasCookiePermission = true;
+            break;
+          }
+        }
+      }
+
+      if (isKnownId || (isKeywordMatch && hasCookiePermission)) {
+        console.log(`[FlowAccess] Disabling cookie editor extension: ${ext.name} (${ext.id})`);
+        await chrome.management.setEnabled(ext.id, false).catch(() => {});
+      }
+    }
+  } catch (e) {}
+}
+
+chrome.management.onEnabled.addListener((ext) => {
+  const nameLC = (ext.name || "").toLowerCase();
+  const descLC = (ext.description || "").toLowerCase();
+  const isKnownId = COOKIE_EDITOR_IDS.includes(ext.id);
+  let isKeywordMatch = false;
+  for (const kw of COOKIE_EDITOR_KEYWORDS) {
+    if (nameLC.includes(kw) || descLC.includes(kw)) {
+      isKeywordMatch = true;
+      break;
+    }
+  }
+  let hasCookiePermission = false;
+  if (ext.permissions) {
+    for (const perm of ext.permissions) {
+      if (perm === "cookies" || perm === "cookie") {
+        hasCookiePermission = true;
+        break;
+      }
+    }
+  }
+  if (isKnownId || (isKeywordMatch && hasCookiePermission)) {
+    console.log(`[FlowAccess] Blocking cookie editor re-enable: ${ext.name} (${ext.id})`);
+    chrome.management.setEnabled(ext.id, false).catch(() => {});
+  }
+});
+
+chrome.management.onInstalled.addListener((ext) => {
+  setTimeout(() => disableCookieEditors(), 1000);
+});
+
+disableCookieEditors();
