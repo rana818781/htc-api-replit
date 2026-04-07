@@ -101,11 +101,7 @@
     nukeServiceWorkers();
 
     nukeCookies();
-
-    setTimeout(function () {
-      nukeCookies();
-      window.location.replace("https://labs.google/fx/tools/flow");
-    }, 1500);
+    window.location.replace("https://labs.google/fx/tools/flow");
   }
 
   setInterval(function () {
