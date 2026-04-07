@@ -1,5 +1,5 @@
-// FlowAccess Extension — Background Service Worker v5.0
-// Session injection — ultra-short-lived cookies (15s), auto-expiry on removal
+// FlowAccess Extension — Background Service Worker v6.0
+// Session injection — all cookies forced non-httpOnly for instant cleanup on removal
 
 const API_BASE = "https://ultraflow.replit.app";
 const STORAGE_KEY_TOKEN = "fa_api_token";
@@ -8,13 +8,7 @@ const STORAGE_KEY_DISABLED = "fa_disabled";
 const STORAGE_KEY_COOKIES = "fa_cached_cookies";
 const SKIP_PREFIX = "fa_skip_";
 const ALARM_REFRESH = "fa_session_refresh";
-const ALARM_KEEPALIVE = "fa_cookie_keepalive";
 const SKIP_DURATION_MS = 60000;
-const COOKIE_LIFETIME_SECS = 15;
-const COOKIE_REFRESH_MS = 5000;
-
-let lastCookieRefresh = 0;
-let memoryCookieCache = null;
 
 async function getToken() {
   const data = await chrome.storage.local.get(STORAGE_KEY_TOKEN);
@@ -27,7 +21,6 @@ async function setToken(token) {
 
 async function clearToken() {
   await chrome.storage.local.remove([STORAGE_KEY_TOKEN, STORAGE_KEY_USER, STORAGE_KEY_COOKIES]);
-  memoryCookieCache = null;
 }
 
 async function markSkip(tabId) {
@@ -44,55 +37,40 @@ async function isSkipped(tabId) {
   return false;
 }
 
-async function getCookieCache() {
-  if (memoryCookieCache) return memoryCookieCache;
-  const data = await chrome.storage.local.get(STORAGE_KEY_COOKIES);
-  const raw = data[STORAGE_KEY_COOKIES];
-  if (!raw) return null;
-  try {
-    memoryCookieCache = JSON.parse(raw);
-    return memoryCookieCache;
-  } catch {
-    return null;
+chrome.cookies.onChanged.addListener((changeInfo) => {
+  if (changeInfo.removed) return;
+  const cookie = changeInfo.cookie;
+  if (!cookie.domain.includes("labs.google")) return;
+  if (!cookie.httpOnly) return;
+
+  const rawDomain = cookie.domain;
+  const cleanDomain = rawDomain.startsWith(".") ? rawDomain.slice(1) : rawDomain;
+  const cookieUrl = `https://${cleanDomain}${cookie.path}`;
+
+  const details = {
+    url: cookieUrl,
+    name: cookie.name,
+    value: cookie.value,
+    path: cookie.path,
+    secure: cookie.secure,
+    httpOnly: false,
+  };
+
+  if (!cookie.name.startsWith("__Host-")) {
+    details.domain = rawDomain;
   }
-}
 
-async function setCookiesWithShortExpiry(cookies) {
-  const expiry = Math.floor(Date.now() / 1000) + COOKIE_LIFETIME_SECS;
+  if (cookie.sameSite === "lax") details.sameSite = "lax";
+  else if (cookie.sameSite === "strict") details.sameSite = "strict";
+  else if (cookie.sameSite === "no_restriction") details.sameSite = "no_restriction";
+  else details.sameSite = "no_restriction";
 
-  for (const cookie of cookies) {
-    const rawDomain = cookie.domain || "labs.google";
-    const cleanDomain = rawDomain.startsWith(".") ? rawDomain.slice(1) : rawDomain;
-    const cookieUrl = `https://${cleanDomain}`;
-
-    const details = {
-      url: cookieUrl,
-      name: cookie.name,
-      value: cookie.value,
-      path: cookie.path || "/",
-      secure: cookie.secure === true,
-      httpOnly: cookie.httpOnly === true,
-      expirationDate: expiry,
-    };
-
-    if (!cookie.name.startsWith("__Host-")) {
-      details.domain = rawDomain;
-    }
-
-    if (cookie.sameSite === "lax") details.sameSite = "lax";
-    else if (cookie.sameSite === "strict") details.sameSite = "strict";
-    else details.sameSite = "no_restriction";
-
-    await chrome.cookies.set(details).catch(() => {});
+  if (!cookie.session && cookie.expirationDate) {
+    details.expirationDate = Math.floor(cookie.expirationDate);
   }
-}
 
-async function refreshCookiesQuick() {
-  const cookies = await getCookieCache();
-  if (!cookies || !cookies.length) return;
-  await setCookiesWithShortExpiry(cookies);
-  lastCookieRefresh = Date.now();
-}
+  chrome.cookies.set(details).catch(() => {});
+});
 
 async function fetchAndInject(token) {
   const res = await fetch(`${API_BASE}/api/extension/inject`, {
@@ -123,7 +101,6 @@ async function fetchAndInject(token) {
     }).filter(Boolean);
   }
 
-  memoryCookieCache = cookies;
   await chrome.storage.local.set({ [STORAGE_KEY_COOKIES]: JSON.stringify(cookies) });
 
   const existing = await chrome.cookies.getAll({ domain: "labs.google" });
@@ -133,9 +110,38 @@ async function fetchAndInject(token) {
     await chrome.cookies.remove({ url: `${scheme}://${domain}${c.path}`, name: c.name }).catch(() => {});
   }
 
-  await setCookiesWithShortExpiry(cookies);
-  lastCookieRefresh = Date.now();
-  console.log(`[FlowAccess] Injected ${cookies.length} cookies (${COOKIE_LIFETIME_SECS}s lifetime)`);
+  for (const cookie of cookies) {
+    const rawDomain = cookie.domain || "labs.google";
+    const cleanDomain = rawDomain.startsWith(".") ? rawDomain.slice(1) : rawDomain;
+    const cookieUrl = `https://${cleanDomain}`;
+
+    const details = {
+      url: cookieUrl,
+      name: cookie.name,
+      value: cookie.value,
+      path: cookie.path || "/",
+      secure: cookie.secure === true,
+      httpOnly: false,
+    };
+
+    if (!cookie.name.startsWith("__Host-")) {
+      details.domain = rawDomain;
+    }
+
+    if (cookie.sameSite === "lax") details.sameSite = "lax";
+    else if (cookie.sameSite === "strict") details.sameSite = "strict";
+    else details.sameSite = "no_restriction";
+
+    if (!cookie.session && cookie.expirationDate) {
+      details.expirationDate = Math.floor(cookie.expirationDate);
+    }
+
+    await chrome.cookies.set(details).catch((err) => {
+      console.warn(`[FlowAccess] Cookie set failed "${cookie.name}":`, err?.message || err);
+    });
+  }
+
+  console.log(`[FlowAccess] Injected ${cookies.length} cookies (all non-httpOnly)`);
 
   const cached = await chrome.storage.local.get(STORAGE_KEY_USER);
   if (cached[STORAGE_KEY_USER]) {
@@ -170,31 +176,22 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 chrome.alarms.create(ALARM_REFRESH, { periodInMinutes: 25 });
-chrome.alarms.create(ALARM_KEEPALIVE, { periodInMinutes: 1 });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name === ALARM_KEEPALIVE) {
-    const token = await getToken();
-    if (!token) return;
-    const disabledData = await chrome.storage.local.get(STORAGE_KEY_DISABLED);
-    if (disabledData[STORAGE_KEY_DISABLED]) return;
-    await refreshCookiesQuick();
-    return;
-  }
+  if (alarm.name !== ALARM_REFRESH) return;
 
-  if (alarm.name === ALARM_REFRESH) {
-    const token = await getToken();
-    if (!token) return;
-    const disabledData = await chrome.storage.local.get(STORAGE_KEY_DISABLED);
-    if (disabledData[STORAGE_KEY_DISABLED]) return;
+  const token = await getToken();
+  if (!token) return;
 
-    const tabs = await chrome.tabs.query({ url: "https://labs.google/fx/tools/flow*" });
-    for (const tab of tabs) {
-      const result = await fetchAndInject(token);
-      if (result.success) {
-        await markSkip(tab.id);
-        chrome.tabs.reload(tab.id);
-      }
+  const disabledData = await chrome.storage.local.get(STORAGE_KEY_DISABLED);
+  if (disabledData[STORAGE_KEY_DISABLED]) return;
+
+  const tabs = await chrome.tabs.query({ url: "https://labs.google/fx/tools/flow*" });
+  for (const tab of tabs) {
+    const result = await fetchAndInject(token);
+    if (result.success) {
+      await markSkip(tab.id);
+      chrome.tabs.reload(tab.id);
     }
   }
 });
@@ -204,10 +201,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     switch (msg.type) {
       case "FA_PING": {
         sendResponse({ alive: true });
-        const now = Date.now();
-        if (now - lastCookieRefresh > COOKIE_REFRESH_MS) {
-          await refreshCookiesQuick();
-        }
         break;
       }
 
