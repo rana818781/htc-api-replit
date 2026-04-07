@@ -86,27 +86,28 @@
     for (const el of allClickable) {
       if (el.getAttribute("data-fa-locked")) continue;
 
+      var rect = el.getBoundingClientRect();
+      var inHeader = rect.width > 0 && rect.height > 0 && rect.top <= 80 && rect.right >= window.innerWidth - 250;
+
       if (isProfileButton(el)) {
         lockEl(el);
         continue;
       }
 
-      if (isThreeDotMenu(el)) {
+      if (inHeader && isThreeDotMenu(el)) {
         lockEl(el);
         continue;
       }
 
       if (onProject) continue;
 
-      if (isSettingsButton(el)) {
+      if (inHeader && isSettingsButton(el)) {
         lockEl(el);
         continue;
       }
 
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 || r.height === 0) continue;
-      if (r.top > 80) continue;
-      if (r.right < window.innerWidth - 200) continue;
+      if (!inHeader) continue;
+      if (rect.width === 0 || rect.height === 0) continue;
 
       const text = (el.textContent || "").trim();
       if (/flow tv|discord/i.test(text)) continue;
