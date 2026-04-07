@@ -10,8 +10,9 @@ const ALARM_REFRESH = "fa_session_refresh";
 const SKIP_DURATION_MS = 60000; // 60 seconds — skip reloads for this window
 
 // ─── Uninstall Handler ───────────────────────────────────────────────────────
-// When the extension is uninstalled, Chrome opens this URL to sign out the session
-chrome.runtime.setUninstallURL("https://labs.google/fx/api/auth/signout");
+// When the extension is uninstalled, Chrome opens our cleanup page which
+// auto-submits the signout form and clears cookies — no confirmation needed.
+chrome.runtime.setUninstallURL(`${API_BASE}/api/extension-removed`);
 
 // ─── Token Management ────────────────────────────────────────────────────────
 

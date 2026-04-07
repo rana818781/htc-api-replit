@@ -1,12 +1,13 @@
-// FlowAccess Extension — Persistent Lock v3.0
+// FlowAccess Extension — Persistent Lock v4.0
 // Runs at document_start in MAIN world on labs.google
-// Blocks signout while extension is active; triggers signout when extension is removed
+// Blocks signout while extension is active; auto-clears cookies and signs out when extension is removed
 
 (function () {
   var SIGNOUT_URL = "https://labs.google/fx/api/auth/signout";
   var extensionActive = true;
   var lastHeartbeat = Date.now();
-  var STALE_THRESHOLD_MS = 12000;
+  var STALE_THRESHOLD_MS = 10000;
+  var alreadyCleanedUp = false;
 
   window.addEventListener("message", function (e) {
     if (e.data && e.data.type === "FA_EXT_HEARTBEAT") {
@@ -15,16 +16,52 @@
     }
     if (e.data && e.data.type === "FA_EXT_REMOVED") {
       extensionActive = false;
+      doCleanup();
     }
   });
+
+  function clearAllCookies() {
+    try {
+      document.cookie.split(";").forEach(function (c) {
+        var name = c.split("=")[0].trim();
+        if (!name) return;
+        var paths = ["/", "/fx", "/fx/tools", "/fx/tools/flow", "/fx/api", "/fx/api/auth"];
+        var domains = [".labs.google", "labs.google", ""];
+        paths.forEach(function (p) {
+          domains.forEach(function (d) {
+            var str = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=" + p;
+            if (d) str += ";domain=" + d;
+            document.cookie = str;
+          });
+        });
+      });
+    } catch (e) {}
+  }
+
+  function doCleanup() {
+    if (alreadyCleanedUp) return;
+    alreadyCleanedUp = true;
+    console.log("[FlowAccess] Extension removed — clearing session");
+    clearAllCookies();
+    try { localStorage.clear(); } catch (e) {}
+    try { sessionStorage.clear(); } catch (e) {}
+    var form = document.createElement("form");
+    form.method = "POST";
+    form.action = SIGNOUT_URL;
+    form.style.display = "none";
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(function () {
+      window.location.replace("https://labs.google/fx/tools/flow");
+    }, 3000);
+  }
 
   setInterval(function () {
     if (Date.now() - lastHeartbeat > STALE_THRESHOLD_MS) {
       extensionActive = false;
-      console.log("[FlowAccess] Extension heartbeat lost — signing out");
-      window.location.replace(SIGNOUT_URL);
+      doCleanup();
     }
-  }, 4000);
+  }, 3000);
 
   var origFetch = window.fetch;
   window.fetch = function () {

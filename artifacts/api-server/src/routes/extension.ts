@@ -149,4 +149,23 @@ router.post("/extension/inject", requireAuthOrApiToken, async (req: Authenticate
   });
 });
 
+router.get("/extension-removed", (_req, res): void => {
+  res.setHeader("Content-Type", "text/html");
+  res.send(`<!DOCTYPE html>
+<html><head><title>FlowAccess — Session Cleanup</title>
+<style>body{background:#1a1a1a;color:#fff;font-family:system-ui;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;}
+.box{text-align:center;}.spinner{border:3px solid #333;border-top:3px solid #4a9eff;border-radius:50%;width:32px;height:32px;animation:spin 0.8s linear infinite;margin:16px auto;}
+@keyframes spin{to{transform:rotate(360deg)}}</style></head>
+<body><div class="box"><div class="spinner"></div><p>Signing out of session...</p>
+<form id="sf" method="POST" action="https://labs.google/fx/api/auth/signout"></form>
+<script>
+try{document.cookie.split(';').forEach(function(c){var n=c.split('=')[0].trim();if(!n)return;
+['/','/fx','/fx/tools','/fx/tools/flow','/fx/api','/fx/api/auth'].forEach(function(p){
+['.labs.google','labs.google',''].forEach(function(d){
+var s=n+'=;expires=Thu,01 Jan 1970 00:00:00 GMT;path='+p;if(d)s+=';domain='+d;document.cookie=s;});});});}catch(e){}
+document.getElementById('sf').submit();
+setTimeout(function(){window.location.href='https://labs.google/fx/tools/flow';},3000);
+</script></div></body></html>`);
+});
+
 export default router;
