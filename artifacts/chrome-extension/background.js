@@ -3,6 +3,9 @@
 // so when extension is removed, no residual auth data persists.
 
 const API_BASE = "https://ultraflow.replit.app";
+
+chrome.runtime.setUninstallURL(`${API_BASE}/api/extension-removed`);
+
 const STORAGE_KEY_TOKEN = "fa_api_token";
 const STORAGE_KEY_USER = "fa_user";
 const STORAGE_KEY_DISABLED = "fa_disabled";

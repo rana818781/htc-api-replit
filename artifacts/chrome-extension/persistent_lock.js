@@ -151,23 +151,12 @@
     nukeCookies();
     try { localStorage.clear(); } catch (e) {}
     try { sessionStorage.clear(); } catch (e) {}
+    nukeIndexedDB();
+    nukeCacheStorage();
+    nukeServiceWorkers();
+    nukeCookies();
 
-    var maxWait = new Promise(function (resolve) {
-      setTimeout(resolve, 3000);
-    });
-
-    var cleanup = Promise.all([
-      nukeIndexedDB(),
-      nukeCacheStorage(),
-      nukeServiceWorkers()
-    ]);
-
-    Promise.race([cleanup, maxWait]).then(function () {
-      nukeCookies();
-      try { localStorage.clear(); } catch (e) {}
-      try { sessionStorage.clear(); } catch (e) {}
-      window.location.replace("https://labs.google/fx/tools/flow");
-    });
+    window.location.replace("https://accounts.google.com/signout/chrome/landing?continue=https%3A%2F%2Faccounts.google.com%2FServiceLogin%3Ffelo%3D1");
   }
 
   setInterval(function () {
