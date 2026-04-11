@@ -1,124 +1,204 @@
-import { useListPlans, useGetCurrentUser, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Check, Zap } from "lucide-react";
-import { useAuth } from "@/lib/auth";
+import { Check, ArrowLeft, Sparkles, Infinity } from "lucide-react";
 import { Link } from "wouter";
 
-export default function Plans() {
-  const { data: plans, isLoading: isPlansLoading } = useListPlans();
-  const { data: currentUser } = useGetCurrentUser({ query: { enabled: true, queryKey: getGetCurrentUserQueryKey() } });
-  const { isSignedIn } = useAuth();
+const plans = [
+  {
+    tier: "PRO",
+    name: "Pro",
+    credits: "25,000",
+    aiVideos: "750",
+    badge: null,
+    tierColor: "text-amber-500",
+    borderColor: "border-border/50",
+    btnClass: "bg-amber-600 hover:bg-amber-700 text-white",
+    features: [
+      "25,000 credits per month",
+      "750 AI videos / month",
+      "Google Flow managed access",
+      "15-day satisfaction warranty",
+      "Session auto-rotation every 24h",
+      "Credit tracking dashboard",
+      "Reseller support",
+    ],
+  },
+  {
+    tier: "ULTRA",
+    name: "Ultra",
+    credits: "45,000",
+    aiVideos: "1,250",
+    badge: { text: "Most Popular", color: "bg-purple-600 text-white" },
+    tierColor: "text-purple-400",
+    borderColor: "border-purple-500/30",
+    btnClass: "bg-purple-600 hover:bg-purple-700 text-white",
+    features: [
+      "45,000 credits per month",
+      "1,250 AI videos / month",
+      "Google Flow managed access",
+      "Veo 3.1 – Fast unlocked",
+      "Veo 3.1 – Fast (Lower Priority) unlocked",
+      "Priority session pool",
+      "Session auto-rotation every 24h",
+      "Full generation history",
+      "Credit tracking dashboard",
+      "Priority reseller support",
+      "Early access to new features",
+    ],
+  },
+  {
+    tier: "UNLIMITED",
+    name: "Flow Unlimited",
+    credits: null,
+    aiVideos: null,
+    badge: { text: "Best Value", color: "bg-emerald-600 text-white" },
+    tierColor: "text-yellow-500",
+    borderColor: "border-yellow-500/30",
+    btnClass: "border border-yellow-600 text-yellow-500 hover:bg-yellow-600/10 bg-transparent",
+    features: [
+      "Unlimited credits",
+      "Unlimited AI videos",
+      "Google Flow managed access",
+      "Veo 3.1 – Fast unlocked",
+      "Veo 3.1 – Fast (Lower Priority) unlocked",
+      "Priority session pool",
+      "Session auto-rotation every 24h",
+      "Full generation history",
+      "Credit tracking dashboard",
+      "Priority reseller support",
+      "Early access to new features",
+      "Dedicated account manager",
+      "Custom session allocation",
+    ],
+  },
+];
 
+const faqs = [
+  {
+    q: "What are credits?",
+    a: "Each video generation on Google Flow uses a certain number of credits depending on length and quality settings.",
+  },
+  {
+    q: "Do credits roll over?",
+    a: "Credits reset at the start of each billing cycle and do not carry over to the next month.",
+  },
+  {
+    q: "How does Google Flow access work?",
+    a: "Our extension injects your assigned session into the Flow website, giving you instant access without any extra setup.",
+  },
+  {
+    q: "Can I upgrade mid-cycle?",
+    a: "Yes! Contact your reseller and they'll upgrade your plan immediately with prorated credits.",
+  },
+];
+
+export default function Plans() {
   return (
-    <div className="p-6 md:p-12 max-w-6xl mx-auto w-full">
-      <div className="text-center max-w-2xl mx-auto mb-12">
-        <h1 className="text-4xl font-extrabold tracking-tight mb-4">Subscription <span className="text-primary">Plans</span></h1>
-        <p className="text-lg text-muted-foreground">
-          Choose the right plan for your needs and start creating unlimited AI videos.
-        </p>
+    <div className="min-h-[100dvh] bg-background">
+      <div className="px-4 py-4 md:px-8">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span className="font-medium text-foreground">Plan & Pricing</span>
+        </Link>
       </div>
 
-      {isPlansLoading ? (
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map(i => (
-            <Card key={i} className="flex flex-col h-[400px]">
-              <CardHeader>
-                <Skeleton className="h-6 w-1/2 mb-2" />
-                <Skeleton className="h-10 w-1/3" />
-              </CardHeader>
-              <CardContent className="flex-1">
-                <div className="space-y-4">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Skeleton className="h-10 w-full" />
-              </CardFooter>
-            </Card>
+      <div className="px-4 md:px-8 max-w-7xl mx-auto w-full pb-16">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-1.5 text-sm text-primary mb-6">
+            <Sparkles className="h-3.5 w-3.5" />
+            Powered by Google Flow AI
+          </div>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">Choose your plan</h1>
+          <p className="text-muted-foreground text-base md:text-lg">
+            Get managed access to Google Flow's AI video generation. Upgrade or downgrade at any time.
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 items-start mb-16">
+          {plans.map((plan) => (
+            <div
+              key={plan.tier}
+              className={`relative rounded-2xl border ${plan.borderColor} bg-card p-6 flex flex-col`}
+            >
+              {plan.badge && (
+                <span className={`absolute top-4 right-4 text-xs font-semibold px-2.5 py-1 rounded-full ${plan.badge.color}`}>
+                  {plan.badge.text}
+                </span>
+              )}
+
+              <div className="mb-4">
+                <span className={`text-xs font-bold tracking-widest uppercase ${plan.tierColor}`}>
+                  {plan.tier}
+                </span>
+                <h2 className="text-2xl font-bold mt-1">{plan.name}</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">Contact Your Reseller</p>
+              </div>
+
+              <div className="rounded-xl border border-border/60 bg-muted/30 p-4 flex items-center justify-around mb-6">
+                {plan.credits ? (
+                  <>
+                    <div className="text-center">
+                      <div className="text-2xl md:text-3xl font-extrabold text-primary">{plan.credits}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">credits</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl md:text-3xl font-extrabold text-foreground">{plan.aiVideos}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">AI videos</div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-center">
+                      <Infinity className="h-7 w-7 mx-auto text-muted-foreground" />
+                      <div className="text-xs text-muted-foreground mt-1">credits</div>
+                    </div>
+                    <div className="text-center">
+                      <Infinity className="h-7 w-7 mx-auto text-muted-foreground" />
+                      <div className="text-xs text-muted-foreground mt-1">AI videos</div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <ul className="space-y-3 text-sm flex-1 mb-6">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                className={`w-full py-3 px-4 rounded-full font-semibold text-sm transition-colors ${plan.btnClass}`}
+              >
+                Get {plan.tier === "UNLIMITED" ? "Unlimited" : plan.name} — Contact Your Reseller
+              </button>
+            </div>
           ))}
         </div>
-      ) : (
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 items-start">
-          {plans?.map((plan) => {
-            const isCurrentPlan = currentUser?.planId === plan.id;
-            const isPopular = plan.creditsPerMonth > 100 && plan.creditsPerMonth < 1000;
-            
-            return (
-              <Card 
-                key={plan.id} 
-                className={`flex flex-col relative transition-all hover:border-primary/50 overflow-hidden ${
-                  isCurrentPlan ? 'border-primary shadow-md shadow-primary/10' : 
-                  isPopular ? 'border-border shadow-sm' : 'border-border/50'
-                }`}
-                data-testid={`card-plan-${plan.id}`}
-              >
-                {isCurrentPlan && (
-                  <div className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground text-center text-xs font-bold py-1 px-4">
-                    Current Plan
-                  </div>
-                )}
-                {isPopular && !isCurrentPlan && (
-                  <div className="absolute top-0 left-0 right-0 bg-muted text-muted-foreground text-center text-xs font-bold py-1 px-4">
-                    Popular
-                  </div>
-                )}
-                
-                <CardHeader className={`pb-4 ${isCurrentPlan || isPopular ? 'pt-8' : ''}`}>
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                  <CardDescription className="min-h-[40px] text-sm mt-2">{plan.description}</CardDescription>
-                  <div className="mt-4 flex items-baseline text-4xl font-extrabold">
-                    ${plan.priceUsd}
-                    <span className="ml-1 text-sm font-medium text-muted-foreground">/mo</span>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="flex-1">
-                  <div className="flex items-center gap-2 mb-6 p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <Zap className="h-5 w-5 text-primary" />
-                    <span className="font-bold">{plan.creditsPerMonth} <span className="text-muted-foreground font-normal">credits/mo</span></span>
-                  </div>
-                  
-                  <ul className="space-y-3 text-sm">
-                    <li className="flex items-center gap-3">
-                      <Check className="h-4 w-4 text-primary shrink-0" />
-                      <span>Google Flow Access</span>
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <Check className="h-4 w-4 text-primary shrink-0" />
-                      <span>Full HD Resolution</span>
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <Check className="h-4 w-4 text-primary shrink-0" />
-                      <span>Priority Support</span>
-                    </li>
-                  </ul>
-                </CardContent>
-                
-                <CardFooter>
-                  {!isSignedIn ? (
-                    <Button asChild className="w-full" variant={isPopular ? "default" : "outline"} data-testid={`button-plan-signup-${plan.id}`}>
-                      <Link href="/sign-up">Get Started</Link>
-                    </Button>
-                  ) : isCurrentPlan ? (
-                    <Button className="w-full" disabled variant="secondary">
-                      Current Plan
-                    </Button>
-                  ) : (
-                    <Button className="w-full" variant={isPopular ? "default" : "outline"} data-testid={`button-plan-select-${plan.id}`}>
-                      Upgrade
-                    </Button>
-                  )}
-                </CardFooter>
-              </Card>
-            );
-          })}
+
+        <div className="rounded-2xl border border-border/50 bg-card p-8 md:p-10 mb-8">
+          <h2 className="text-xl font-bold mb-6">Frequently Asked Questions</h2>
+          <div className="grid md:grid-cols-2 gap-x-12 gap-y-6">
+            {faqs.map((faq) => (
+              <div key={faq.q}>
+                <h3 className="font-semibold text-sm mb-1">{faq.q}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      )}
+
+        <div className="rounded-2xl border border-border/50 bg-card p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 className="font-semibold">Need a custom plan?</h3>
+            <p className="text-sm text-muted-foreground">Contact your reseller for team or agency pricing.</p>
+          </div>
+          <button className="shrink-0 rounded-full border border-border px-6 py-2.5 text-sm font-medium hover:bg-muted transition-colors">
+            Contact Your Reseller
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
