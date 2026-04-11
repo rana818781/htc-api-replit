@@ -5,24 +5,24 @@ import { logger } from "./logger";
 
 const DEFAULT_PLANS = [
   {
-    name: "Starter",
-    priceUsd: "9.99",
-    creditsPerMonth: 10,
-    description: "10 credits per month. Perfect for getting started.",
-    isActive: true,
-  },
-  {
     name: "Pro",
-    priceUsd: "29.99",
-    creditsPerMonth: 50,
-    description: "50 credits per month. Great for regular users.",
+    priceUsd: "0",
+    creditsPerMonth: 25000,
+    description: "25,000 credits per month. 750 AI videos / month. Google Flow managed access.",
     isActive: true,
   },
   {
-    name: "Unlimited",
-    priceUsd: "79.99",
-    creditsPerMonth: 200,
-    description: "200 credits per month. For power users.",
+    name: "Ultra",
+    priceUsd: "0",
+    creditsPerMonth: 45000,
+    description: "45,000 credits per month. 1,250 AI videos / month. Google Flow managed access. Priority session pool.",
+    isActive: true,
+  },
+  {
+    name: "Flow Unlimited",
+    priceUsd: "0",
+    creditsPerMonth: 999999,
+    description: "Unlimited credits. Unlimited AI videos. Google Flow managed access. Dedicated account manager.",
     isActive: true,
   },
 ];
