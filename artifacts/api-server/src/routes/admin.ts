@@ -104,6 +104,36 @@ router.delete("/admin/sessions/:id", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
+router.patch("/admin/plans/:id", async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid plan ID" });
+    return;
+  }
+
+  const { name, priceUsd, creditsPerMonth, description, isActive } = req.body;
+  const updates: Record<string, unknown> = {};
+  if (name !== undefined) updates.name = name;
+  if (priceUsd !== undefined) updates.priceUsd = priceUsd;
+  if (creditsPerMonth !== undefined) updates.creditsPerMonth = creditsPerMonth;
+  if (description !== undefined) updates.description = description;
+  if (isActive !== undefined) updates.isActive = isActive;
+
+  const [plan] = await db
+    .update(plansTable)
+    .set(updates)
+    .where(eq(plansTable.id, id))
+    .returning();
+
+  if (!plan) {
+    res.status(404).json({ error: "Plan not found" });
+    return;
+  }
+
+  res.json(plan);
+});
+
 router.get("/admin/users", async (req, res): Promise<void> => {
   const users = await db
     .select({
