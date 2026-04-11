@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, Star, ChevronDown, Sparkles, Monitor } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const videoThumbnails = [
   "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=300&h=200&fit=crop",
@@ -20,7 +20,122 @@ const videoThumbnails = [
   "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=300&h=200&fit=crop",
   "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=300&h=200&fit=crop",
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300&h=200&fit=crop",
+  "https://images.unsplash.com/photo-1518882515519-a59e352dfb57?w=300&h=200&fit=crop",
+  "https://images.unsplash.com/photo-1462275646964-a0e3c11f18a6?w=300&h=200&fit=crop",
+  "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=300&h=200&fit=crop",
+  "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=300&h=200&fit=crop",
+  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=200&fit=crop",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=200&fit=crop",
+  "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=200&fit=crop",
+  "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=200&fit=crop",
 ];
+
+const COLUMN_COUNT = 6;
+
+function distributeToColumns(images: string[], columns: number): string[][] {
+  const cols: string[][] = Array.from({ length: columns }, () => []);
+  images.forEach((img, i) => {
+    cols[i % columns].push(img);
+  });
+  return cols;
+}
+
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return reduced;
+}
+
+function ScrollingColumn({ images, direction, speed, paused }: { images: string[]; direction: "up" | "down"; speed: number; paused: boolean }) {
+  const columnRef = useRef<HTMLDivElement>(null);
+  const posRef = useRef<number | null>(null);
+  const doubled = [...images, ...images];
+
+  useEffect(() => {
+    const el = columnRef.current;
+    if (!el || paused) return;
+    let animationId: number;
+    const halfHeight = el.scrollHeight / 2;
+    if (posRef.current === null) {
+      posRef.current = direction === "up" ? 0 : -halfHeight;
+    }
+
+    const animate = () => {
+      if (direction === "up") {
+        posRef.current! -= speed;
+        if (Math.abs(posRef.current!) >= halfHeight) posRef.current = 0;
+      } else {
+        posRef.current! += speed;
+        if (posRef.current! >= 0) posRef.current = -halfHeight;
+      }
+      el.style.transform = `translateY(${posRef.current}px)`;
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animationId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationId);
+  }, [direction, speed, images.length, paused]);
+
+  return (
+    <div className="overflow-hidden h-full">
+      <div ref={columnRef} className="flex flex-col gap-3 will-change-transform">
+        {doubled.map((src, i) => (
+          <div key={i} className="rounded-xl overflow-hidden flex-shrink-0" style={{ aspectRatio: "3/4" }}>
+            <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" draggable={false} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AnimatedMosaicBackground() {
+  const columns = distributeToColumns(videoThumbnails, COLUMN_COUNT);
+  const reducedMotion = useReducedMotion();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setVisible(entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const paused = reducedMotion || !visible;
+
+  return (
+    <div ref={containerRef} className="absolute inset-0 z-0 overflow-hidden">
+      <div
+        className="h-[140%] -mt-[20%] flex gap-3 px-3 opacity-60"
+        style={{ perspective: "1000px", transform: "rotateX(8deg) scale(1.1)" }}
+      >
+        {columns.map((col, i) => (
+          <div key={i} className="flex-1 min-w-0">
+            <ScrollingColumn
+              images={col}
+              direction={i % 2 === 0 ? "up" : "down"}
+              speed={0.3 + (i % 3) * 0.1}
+              paused={paused}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-[#0a0a0a]/50 to-[#0a0a0a]" />
+      <div className="absolute inset-0 bg-[#0a0a0a]/30" />
+    </div>
+  );
+}
 
 const showcaseItems = [
   {
@@ -223,32 +338,22 @@ export default function Home() {
       </header>
 
       <section className="relative pt-16 min-h-[100vh] flex flex-col items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-1 p-1 opacity-30 blur-[2px]">
-            {videoThumbnails.slice(0, 8).map((src, i) => (
-              <div key={i} className="aspect-video rounded-lg overflow-hidden">
-                <img src={src} alt="" className="w-full h-full object-cover" loading="eager" />
-              </div>
-            ))}
-            {videoThumbnails.slice(8).map((src, i) => (
-              <div key={`r2-${i}`} className="aspect-video rounded-lg overflow-hidden">
-                <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" />
-              </div>
-            ))}
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/40 via-[#0a0a0a]/60 to-[#0a0a0a]" />
-        </div>
+        <AnimatedMosaicBackground />
 
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-          <h1 className="text-7xl sm:text-8xl md:text-9xl font-bold tracking-tighter mb-6 bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
+          <h1 className="text-7xl sm:text-8xl md:text-9xl font-bold tracking-tighter mb-6 bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent drop-shadow-2xl">
             Flow
           </h1>
-          <p className="text-white/50 text-base sm:text-lg max-w-xl mx-auto mb-8">
-            Create stunning AI-generated videos and images with Google's most advanced models. Professional quality, zero complexity.
+          <p className="text-white/60 text-base sm:text-lg max-w-xl mx-auto mb-8">
+            Where the next wave of storytelling happens.
           </p>
-          <Button size="lg" asChild className="rounded-full px-8 h-12 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
-            <Link href="/sign-up">Get Started Free <ArrowRight className="ml-2 h-4 w-4" /></Link>
+          <Button size="lg" asChild className="rounded-full px-8 h-12 text-base font-semibold bg-white text-black hover:bg-white/90 shadow-lg shadow-white/10">
+            <Link href="/sign-up">Create with Flow</Link>
           </Button>
+        </div>
+
+        <div className="absolute bottom-8 z-10 animate-bounce">
+          <ChevronDown className="h-6 w-6 text-white/40" />
         </div>
       </section>
 
