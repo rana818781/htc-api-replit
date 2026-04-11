@@ -76,6 +76,6 @@
   },
   "dependencies": {
     "@clerk/react": "^6.1.4",
-    "axios": "^1.14.0"
+    "axios": "^1.15.0"
   }
 }
