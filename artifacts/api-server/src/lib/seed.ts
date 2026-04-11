@@ -66,11 +66,28 @@ export async function seedAdmin(): Promise<void> {
 
 export async function seedPlans(): Promise<void> {
   const existing = await db.select().from(plansTable);
-  if (existing.length > 0) {
-    logger.info({ count: existing.length }, "Plans already seeded, skipping");
+  if (existing.length === 0) {
+    await db.insert(plansTable).values(DEFAULT_PLANS);
+    logger.info("Seeded default plans");
     return;
   }
 
-  await db.insert(plansTable).values(DEFAULT_PLANS);
-  logger.info("Seeded default plans");
+  for (let i = 0; i < DEFAULT_PLANS.length; i++) {
+    const plan = DEFAULT_PLANS[i];
+    const match = existing[i];
+    if (match && match.name !== plan.name) {
+      await db
+        .update(plansTable)
+        .set({
+          name: plan.name,
+          priceUsd: plan.priceUsd,
+          creditsPerMonth: plan.creditsPerMonth,
+          description: plan.description,
+        })
+        .where(eq(plansTable.id, match.id));
+      logger.info({ oldName: match.name, newName: plan.name }, "Plan updated");
+    }
+  }
+
+  logger.info({ count: existing.length }, "Plans seed check complete");
 }
