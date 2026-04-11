@@ -32,3 +32,5 @@ channel = "stable-25_05"
 
 [userenv.shared]
 ADMIN_EMAIL = "itzranafree5@gmail.com"
+ADMIN_USERNAME = "itzranafree5@gmail.com"
+JWT_SECRET = "c8ae9ffe63151bae31b544e850f704d83ad9fb1c17380530431e4d006d931a28"

@@ -1,15 +1,20 @@
 import { Router, type IRouter } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db, usersTable, plansTable, usageLogsTable } from "@workspace/db";
-import { requireAuth, getOrCreateUser, type AuthenticatedRequest } from "../middlewares/auth";
-import { resolveClerkEmail } from "../lib/clerkEmail";
+import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
 router.get("/users/me", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
-  const clerkUserId = req.clerkUserId!;
-  const email = await resolveClerkEmail(req, clerkUserId);
-  const user = await getOrCreateUser(clerkUserId, email);
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, req.userId!));
+
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
 
   let planName: string | null = null;
   if (user.planId) {
@@ -22,7 +27,7 @@ router.get("/users/me", requireAuth, async (req: AuthenticatedRequest, res): Pro
 
   res.json({
     id: user.id,
-    clerkUserId: user.clerkUserId,
+    username: user.username,
     email: user.email,
     isAdmin: user.isAdmin,
     planId: user.planId,
@@ -36,9 +41,15 @@ router.get("/users/me", requireAuth, async (req: AuthenticatedRequest, res): Pro
 });
 
 router.get("/users/usage", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
-  const clerkUserId = req.clerkUserId!;
-  const email = await resolveClerkEmail(req, clerkUserId);
-  const user = await getOrCreateUser(clerkUserId, email);
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, req.userId!));
+
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
 
   const logs = await db
     .select({

@@ -1,15 +1,13 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, count } from "drizzle-orm";
-import { createClerkClient } from "@clerk/express";
+import bcrypt from "bcryptjs";
 import { db, usersTable, plansTable, sessionsTable, usageLogsTable } from "@workspace/db";
 import { requireAdmin, type AuthenticatedRequest } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-// All admin routes require admin middleware
 router.use(requireAdmin);
 
-// GET /admin/sessions/stats - must come before /admin/sessions/:id
 router.get("/admin/sessions/stats", async (req, res): Promise<void> => {
   const [[totalSessionsRow], [activeSessionsRow], [totalUsersRow], [totalUsageRow]] =
     await Promise.all([
@@ -27,7 +25,6 @@ router.get("/admin/sessions/stats", async (req, res): Promise<void> => {
   });
 });
 
-// GET /admin/sessions
 router.get("/admin/sessions", async (req, res): Promise<void> => {
   const sessions = await db
     .select()
@@ -36,7 +33,6 @@ router.get("/admin/sessions", async (req, res): Promise<void> => {
   res.json(sessions);
 });
 
-// POST /admin/sessions
 router.post("/admin/sessions", async (req, res): Promise<void> => {
   const { label, cookieData, isActive } = req.body;
 
@@ -57,7 +53,6 @@ router.post("/admin/sessions", async (req, res): Promise<void> => {
   res.status(201).json(session);
 });
 
-// PATCH /admin/sessions/:id
 router.patch("/admin/sessions/:id", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
@@ -86,7 +81,6 @@ router.patch("/admin/sessions/:id", async (req, res): Promise<void> => {
   res.json(session);
 });
 
-// DELETE /admin/sessions/:id
 router.delete("/admin/sessions/:id", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
@@ -95,7 +89,6 @@ router.delete("/admin/sessions/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  // Must delete usage_logs referencing this session first (foreign key constraint)
   await db.delete(usageLogsTable).where(eq(usageLogsTable.sessionId, id));
 
   const [session] = await db
@@ -111,12 +104,11 @@ router.delete("/admin/sessions/:id", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
-// GET /admin/users
 router.get("/admin/users", async (req, res): Promise<void> => {
   const users = await db
     .select({
       id: usersTable.id,
-      clerkUserId: usersTable.clerkUserId,
+      username: usersTable.username,
       email: usersTable.email,
       isAdmin: usersTable.isAdmin,
       planId: usersTable.planId,
@@ -133,82 +125,45 @@ router.get("/admin/users", async (req, res): Promise<void> => {
   res.json(users);
 });
 
-// POST /admin/users
 router.post("/admin/users", async (req: AuthenticatedRequest, res): Promise<void> => {
-  const { email, password, planId, creditsTotal, isAdmin } = req.body;
+  const { username, password, planId, creditsTotal, isAdmin } = req.body;
 
-  if (!email || !password) {
-    res.status(400).json({ error: "email and password are required" });
+  if (!username || !password) {
+    res.status(400).json({ error: "username and password are required" });
     return;
   }
 
-  if (password.length < 8) {
-    res.status(400).json({ error: "Password must be at least 8 characters" });
+  if (password.length < 6) {
+    res.status(400).json({ error: "Password must be at least 6 characters" });
     return;
   }
 
-  const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+  const [existing] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.username, username.trim()));
 
-  // Create the Clerk user, then explicitly mark the email as verified.
-  // If either step fails the request fails — no silent fallbacks on the verification step.
-  let clerkUser;
-  try {
-    clerkUser = await clerk.users.createUser({
-      emailAddress: [email],
-      password,
-      skipPasswordChecks: false,
-    });
-  } catch (err: unknown) {
-    req.log.error({ err }, "Failed to create Clerk user");
-    const clerkErr = err as { errors?: Array<{ message: string }> };
-    const message = clerkErr?.errors?.[0]?.message ?? "Failed to create user in Clerk";
-    res.status(400).json({ error: message });
+  if (existing) {
+    res.status(409).json({ error: "Username already taken" });
     return;
   }
 
-  // Immediately mark the email as verified so no verification email is sent.
-  const primaryEmail = clerkUser.emailAddresses.find(
-    (e) => e.emailAddress === email,
-  );
-  if (primaryEmail && primaryEmail.verification?.status !== "verified") {
-    try {
-      await clerk.emailAddresses.updateEmailAddress(primaryEmail.id, {
-        verified: true,
-        primary: true,
-      } as Parameters<typeof clerk.emailAddresses.updateEmailAddress>[1]);
-    } catch (verifyErr: unknown) {
-      // Verification update failed — delete the partially-created Clerk user and fail the request.
-      try {
-        await clerk.users.deleteUser(clerkUser.id);
-      } catch {
-        // Best-effort cleanup; log if needed.
-      }
-      req.log.error({ verifyErr }, "Failed to verify email address for admin-created user");
-      res.status(500).json({ error: "Failed to mark email as verified; user was not created" });
-      return;
-    }
-  }
+  const passwordHash = await bcrypt.hash(password, 10);
 
   let newUser;
   try {
     [newUser] = await db
       .insert(usersTable)
       .values({
-        clerkUserId: clerkUser.id,
-        email,
+        username: username.trim(),
+        passwordHash,
         planId: planId ?? null,
         creditsTotal: creditsTotal ?? 0,
         isAdmin: isAdmin ?? false,
       })
       .returning();
   } catch (dbErr: unknown) {
-    // DB insert failed — clean up the Clerk user to prevent identity drift.
-    try {
-      await clerk.users.deleteUser(clerkUser.id);
-    } catch {
-      // Best-effort cleanup.
-    }
-    req.log.error({ dbErr }, "Failed to insert user into DB; rolled back Clerk user");
+    req.log.error({ dbErr }, "Failed to insert user into DB");
     res.status(500).json({ error: "Failed to save user; please try again" });
     return;
   }
@@ -225,7 +180,6 @@ router.post("/admin/users", async (req: AuthenticatedRequest, res): Promise<void
   res.status(201).json({ ...newUser, planName });
 });
 
-// PATCH /admin/users/:id
 router.patch("/admin/users/:id", async (req: AuthenticatedRequest, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
@@ -239,11 +193,10 @@ router.patch("/admin/users/:id", async (req: AuthenticatedRequest, res): Promise
   if (planId !== undefined) updates.planId = planId;
   if (creditsTotal !== undefined) updates.creditsTotal = creditsTotal;
   if (creditsUsed !== undefined) updates.creditsUsed = creditsUsed;
-  // Prevent admin from accidentally removing their own admin status
   if (isAdmin !== undefined) {
     const isSelf = req.dbUser?.id === id;
     if (isSelf && !isAdmin) {
-      res.status(400).json({ error: "নিজের অ্যাডমিন স্ট্যাটাস সরাতে পারবেন না" });
+      res.status(400).json({ error: "Cannot remove your own admin status" });
       return;
     }
     updates.isAdmin = isAdmin;
@@ -272,7 +225,6 @@ router.patch("/admin/users/:id", async (req: AuthenticatedRequest, res): Promise
   res.json({ ...user, planName });
 });
 
-// DELETE /admin/users/:id
 router.delete("/admin/users/:id", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
@@ -294,13 +246,12 @@ router.delete("/admin/users/:id", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
-// GET /admin/usage
 router.get("/admin/usage", async (req, res): Promise<void> => {
   const logs = await db
     .select({
       id: usageLogsTable.id,
       userId: usageLogsTable.userId,
-      userEmail: usersTable.email,
+      userEmail: usersTable.username,
       sessionId: usageLogsTable.sessionId,
       action: usageLogsTable.action,
       creditsUsed: usageLogsTable.creditsUsed,

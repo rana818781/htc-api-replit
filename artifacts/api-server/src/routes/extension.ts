@@ -2,30 +2,25 @@ import { Router, type IRouter, type Response, type NextFunction } from "express"
 import { eq, asc, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db, usersTable, sessionsTable, usageLogsTable, apiTokensTable, plansTable } from "@workspace/db";
-import { requireAuth, requireApiToken, getOrCreateUser, type AuthenticatedRequest } from "../middlewares/auth";
-import { resolveClerkEmail } from "../lib/clerkEmail";
+import { requireAuth, requireApiToken, type AuthenticatedRequest } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
 router.get("/extension/token", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
-  const clerkUserId = req.clerkUserId!;
-  const email = await resolveClerkEmail(req, clerkUserId);
-  const user = await getOrCreateUser(clerkUserId, email);
+  const userId = req.userId!;
 
-  // Check if user already has a token
   const [existingToken] = await db
     .select()
     .from(apiTokensTable)
-    .where(eq(apiTokensTable.userId, user.id));
+    .where(eq(apiTokensTable.userId, userId));
 
   if (existingToken) {
     res.json({ token: existingToken.token });
     return;
   }
 
-  // Create a new token
   const token = randomBytes(32).toString("hex");
-  await db.insert(apiTokensTable).values({ userId: user.id, token });
+  await db.insert(apiTokensTable).values({ userId, token });
 
   res.json({ token });
 });
@@ -50,7 +45,7 @@ router.get("/extension/me", requireApiToken, async (req: AuthenticatedRequest, r
 
   res.json({
     id: fullUser.id,
-    clerkUserId: fullUser.clerkUserId,
+    username: fullUser.username,
     email: fullUser.email,
     isAdmin: fullUser.isAdmin,
     planId: fullUser.planId,
@@ -63,7 +58,6 @@ router.get("/extension/me", requireApiToken, async (req: AuthenticatedRequest, r
   });
 });
 
-// Combined middleware: accepts either X-API-Token or Clerk JWT Bearer token
 async function requireAuthOrApiToken(
   req: AuthenticatedRequest,
   res: Response,
@@ -73,25 +67,20 @@ async function requireAuthOrApiToken(
   if (apiTokenHeader) {
     return requireApiToken(req, res, next);
   }
-  // Fall back to Clerk JWT
-  const { getAuth } = await import("@clerk/express");
-  const auth = getAuth(req);
-  if (!auth?.userId) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  req.clerkUserId = auth.userId;
-  const email = await resolveClerkEmail(req, auth.userId);
-  const user = await getOrCreateUser(auth.userId, email);
-  req.dbUser = user;
-  next();
+  return requireAuth(req, res, next) as unknown as Promise<void>;
 }
 
 router.post("/extension/inject", requireAuthOrApiToken, async (req: AuthenticatedRequest, res): Promise<void> => {
-  const user = req.dbUser!;
+  let user = req.dbUser;
+  if (!user && req.userId) {
+    const [u] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId));
+    user = u;
+  }
+  if (!user) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
 
-  // Atomically deduct 1 credit using a conditional UPDATE.
-  // Only succeeds if credits_used < credits_total — prevents over-spending under concurrent requests.
   const [updatedUser] = await db
     .update(usersTable)
     .set({ creditsUsed: sql`${usersTable.creditsUsed} + 1` })
@@ -101,14 +90,12 @@ router.post("/extension/inject", requireAuthOrApiToken, async (req: Authenticate
     .returning();
 
   if (!updatedUser) {
-    // No row updated means credits_used >= credits_total — no credits remaining
     res.status(403).json({ error: "No credits remaining" });
     return;
   }
 
   const creditsRemaining = Math.max(0, updatedUser.creditsTotal - updatedUser.creditsUsed);
 
-  // Pick least-recently-used active session
   const [session] = await db
     .select()
     .from(sessionsTable)
@@ -117,7 +104,6 @@ router.post("/extension/inject", requireAuthOrApiToken, async (req: Authenticate
     .limit(1);
 
   if (!session) {
-    // Roll back the credit deduction since we can't serve a session
     await db
       .update(usersTable)
       .set({ creditsUsed: sql`${usersTable.creditsUsed} - 1` })
@@ -126,7 +112,6 @@ router.post("/extension/inject", requireAuthOrApiToken, async (req: Authenticate
     return;
   }
 
-  // Update session lastUsedAt and usageCount atomically
   await db
     .update(sessionsTable)
     .set({
@@ -135,7 +120,6 @@ router.post("/extension/inject", requireAuthOrApiToken, async (req: Authenticate
     })
     .where(eq(sessionsTable.id, session.id));
 
-  // Log usage
   await db.insert(usageLogsTable).values({
     userId: user.id,
     sessionId: session.id,

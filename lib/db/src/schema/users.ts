@@ -5,8 +5,10 @@ import { plansTable } from "./plans";
 
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
-  clerkUserId: varchar("clerk_user_id", { length: 255 }).notNull().unique(),
-  email: varchar("email", { length: 255 }).notNull().unique(),
+  username: varchar("username", { length: 255 }).notNull().unique(),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  clerkUserId: varchar("clerk_user_id", { length: 255 }),
+  email: varchar("email", { length: 255 }),
   isAdmin: boolean("is_admin").notNull().default(false),
   planId: integer("plan_id").references(() => plansTable.id),
   creditsTotal: integer("credits_total").notNull().default(0),

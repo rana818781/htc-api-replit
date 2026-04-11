@@ -1,14 +1,12 @@
-import { useEffect, type ComponentType } from "react";
-import { ClerkProvider, SignIn, SignUp, useClerk, useAuth } from "@clerk/react";
-import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
-import { useGetCurrentUser, setAuthTokenGetter } from "@workspace/api-client-react";
+import { type ComponentType } from "react";
+import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
+import { useGetCurrentUser } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
-import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useRef } from "react";
+import { AuthProvider, useAuth } from "@/lib/auth";
 
-// Components
 import Home from "./pages/home";
 import Dashboard from "./pages/dashboard";
 import Plans from "./pages/plans";
@@ -16,70 +14,10 @@ import Usage from "./pages/usage";
 import Admin from "./pages/admin";
 import AdminAddSession from "./pages/admin-add-session";
 import NotFound from "./pages/not-found";
+import AuthPage from "./pages/auth";
 import { Layout } from "./components/layout";
 
-const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-
-function stripBase(path: string): string {
-  return basePath && path.startsWith(basePath)
-    ? path.slice(basePath.length) || "/"
-    : path;
-}
-
-if (!clerkPubKey) {
-  throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY in .env file");
-}
-
-function SignInPage() {
-  return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background p-4">
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
-    </div>
-  );
-}
-
-function SignUpPage() {
-  return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background p-4">
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
-    </div>
-  );
-}
-
-function ClerkAuthBridge() {
-  const { getToken } = useAuth();
-
-  useEffect(() => {
-    setAuthTokenGetter(() => getToken());
-    return () => setAuthTokenGetter(null);
-  }, [getToken]);
-
-  return null;
-}
-
-function ClerkQueryClientCacheInvalidator() {
-  const { addListener } = useClerk();
-  const queryClient = useQueryClient();
-  const prevUserIdRef = useRef<string | null | undefined>(undefined);
-
-  useEffect(() => {
-    const unsubscribe = addListener((emission) => {
-      const userId = emission?.user?.id ?? null;
-      if (
-        prevUserIdRef.current !== undefined &&
-        prevUserIdRef.current !== userId
-      ) {
-        queryClient.clear();
-      }
-      prevUserIdRef.current = userId;
-    });
-    return unsubscribe;
-  }, [addListener, queryClient]);
-
-  return null;
-}
 
 function HomeRedirect() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -97,7 +35,7 @@ function ProtectedRoute({ component: Component }: { component: ComponentType }) 
       </div>
     );
   }
-  if (!isSignedIn) return <Redirect to="/" />;
+  if (!isSignedIn) return <Redirect to="/sign-in" />;
   return (
     <Layout>
       <Component />
@@ -116,7 +54,7 @@ function AdminRoute({ component: Component }: { component: ComponentType }) {
       </div>
     );
   }
-  if (!isSignedIn) return <Redirect to="/" />;
+  if (!isSignedIn) return <Redirect to="/sign-in" />;
   if (!user?.isAdmin) return <Redirect to="/dashboard" />;
   return (
     <Layout>
@@ -133,57 +71,35 @@ function PublicRouteWithLayout({ component: Component }: { component: ComponentT
   );
 }
 
-function ClerkProviderWithRoutes() {
-  const [, setLocation] = useLocation();
+function SignInRedirectIfAuthed() {
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded) return null;
+  if (isSignedIn) return <Redirect to="/dashboard" />;
+  return <AuthPage defaultTab="login" />;
+}
 
+function SignUpRedirectIfAuthed() {
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded) return null;
+  if (isSignedIn) return <Redirect to="/dashboard" />;
+  return <AuthPage defaultTab="signup" />;
+}
+
+function AppRoutes() {
   return (
-    <ClerkProvider
-      publishableKey={clerkPubKey}
-      proxyUrl={clerkProxyUrl}
-      routerPush={(to: string) => setLocation(stripBase(to))}
-      routerReplace={(to: string) => setLocation(stripBase(to), { replace: true })}
-      appearance={{
-        layout: {
-          socialButtonsVariant: "iconButton",
-        },
-        variables: {
-          colorPrimary: "hsl(142.1 70.6% 45.3%)",
-          colorBackground: "hsl(240 10% 3.9%)",
-          colorInputBackground: "hsl(240 3.7% 15.9%)",
-          colorInputText: "hsl(0 0% 98%)",
-          colorText: "hsl(0 0% 98%)",
-          colorTextSecondary: "hsl(240 5% 64.9%)",
-        },
-        elements: {
-          card: "bg-card text-card-foreground border border-border shadow-md",
-          headerTitle: "text-foreground",
-          headerSubtitle: "text-muted-foreground",
-          socialButtonsBlockButton: "border-border hover:bg-accent hover:text-accent-foreground",
-          dividerLine: "bg-border",
-          dividerText: "text-muted-foreground",
-          formFieldLabel: "text-foreground",
-          formFieldInput: "bg-input border-border text-foreground focus:ring-primary",
-          footerActionText: "text-muted-foreground",
-          footerActionLink: "text-primary hover:text-primary/90",
-        }
-      }}
-    >
-      <QueryClientProvider client={queryClient}>
-        <ClerkAuthBridge />
-        <ClerkQueryClientCacheInvalidator />
-        <Switch>
-          <Route path="/" component={HomeRedirect} />
-          <Route path="/sign-in/*?" component={SignInPage} />
-          <Route path="/sign-up/*?" component={SignUpPage} />
-          <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
-          <Route path="/plans" component={() => <PublicRouteWithLayout component={Plans} />} />
-          <Route path="/usage" component={() => <ProtectedRoute component={Usage} />} />
-          <Route path="/admin/sessions/new" component={() => <AdminRoute component={AdminAddSession} />} />
-          <Route path="/admin" component={() => <AdminRoute component={Admin} />} />
-          <Route component={() => <Layout><NotFound /></Layout>} />
-        </Switch>
-      </QueryClientProvider>
-    </ClerkProvider>
+    <QueryClientProvider client={queryClient}>
+      <Switch>
+        <Route path="/" component={HomeRedirect} />
+        <Route path="/sign-in" component={SignInRedirectIfAuthed} />
+        <Route path="/sign-up" component={SignUpRedirectIfAuthed} />
+        <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
+        <Route path="/plans" component={() => <PublicRouteWithLayout component={Plans} />} />
+        <Route path="/usage" component={() => <ProtectedRoute component={Usage} />} />
+        <Route path="/admin/sessions/new" component={() => <AdminRoute component={AdminAddSession} />} />
+        <Route path="/admin" component={() => <AdminRoute component={Admin} />} />
+        <Route component={() => <Layout><NotFound /></Layout>} />
+      </Switch>
+    </QueryClientProvider>
   );
 }
 
@@ -191,7 +107,9 @@ function App() {
   return (
     <TooltipProvider>
       <WouterRouter base={basePath}>
-        <ClerkProviderWithRoutes />
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
       </WouterRouter>
       <Toaster />
     </TooltipProvider>

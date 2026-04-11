@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Check, Zap } from "lucide-react";
-import { useUser } from "@clerk/react";
+import { useAuth } from "@/lib/auth";
 import { Link } from "wouter";
 
 export default function Plans() {
   const { data: plans, isLoading: isPlansLoading } = useListPlans();
   const { data: currentUser } = useGetCurrentUser({ query: { enabled: true, queryKey: getGetCurrentUserQueryKey() } });
-  const { isSignedIn } = useUser();
+  const { isSignedIn } = useAuth();
 
   return (
     <div className="p-6 md:p-12 max-w-6xl mx-auto w-full">

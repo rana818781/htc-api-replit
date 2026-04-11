@@ -60,7 +60,7 @@ function parseCookieCount(cookieData: string): number {
 }
 
 const userSchema = z.object({
-  email: z.string().email("Invalid email"),
+  username: z.string().min(2, "Username must be at least 2 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   planId: z.string().optional(),
   creditsTotal: z.coerce.number().min(0).default(0),
@@ -424,7 +424,7 @@ function UsersTab() {
 
   const createForm = useForm<z.infer<typeof userSchema>>({
     resolver: zodResolver(userSchema),
-    defaultValues: { email: "", password: "", creditsTotal: 0, isAdmin: false, planId: "" },
+    defaultValues: { username: "", password: "", creditsTotal: 0, isAdmin: false, planId: "" },
   });
 
   const editForm = useForm<z.infer<typeof editUserSchema>>({
@@ -477,8 +477,8 @@ function UsersTab() {
             <DialogHeader><DialogTitle>New User</DialogTitle></DialogHeader>
             <Form {...createForm}>
               <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
-                <FormField control={createForm.control} name="email" render={({ field }) => (
-                  <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormField control={createForm.control} name="username" render={({ field }) => (
+                  <FormItem><FormLabel>Username</FormLabel><FormControl><Input type="text" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={createForm.control} name="password" render={({ field }) => (
                   <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
@@ -528,7 +528,7 @@ function UsersTab() {
             <TableBody>
               {users?.map(u => (
                 <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.email}</TableCell>
+                  <TableCell className="font-medium">{u.username || u.email}</TableCell>
                   <TableCell>{u.planName || "N/A"}</TableCell>
                   <TableCell>{u.creditsUsed} / {u.creditsTotal}</TableCell>
                   <TableCell><Badge variant={u.isAdmin ? "default" : "outline"}>{u.isAdmin ? "Yes" : "No"}</Badge></TableCell>

@@ -1,19 +1,17 @@
-import { useClerk, useUser } from "@clerk/react";
 import { Link, useLocation } from "wouter";
 import { LogOut, LayoutDashboard, CreditCard, Activity, ShieldAlert, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useGetCurrentUser } from "@workspace/api-client-react";
+import { useAuth } from "@/lib/auth";
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
+  const { user, isLoaded, isSignedIn, signOut } = useAuth();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { data: apiUser } = useGetCurrentUser({ query: { enabled: !!user } });
+  const { data: apiUser } = useGetCurrentUser({ query: { enabled: isSignedIn } });
 
   const isAdmin = apiUser?.isAdmin === true;
-  const isSignedIn = isLoaded && !!user;
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -23,9 +21,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-[100dvh] w-full bg-background flex-col md:flex-row">
-      {isSignedIn && (
+      {isLoaded && isSignedIn && (
         <>
-          {/* Mobile Header */}
           <div className="md:hidden flex items-center justify-between p-4 border-b border-border">
             <Link href="/dashboard" className="text-xl font-bold text-primary tracking-tight">
               FlowAccess
@@ -39,7 +36,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Button>
           </div>
 
-          {/* Sidebar */}
           <aside
             className={`${
               isMobileMenuOpen ? "flex" : "hidden"
@@ -94,16 +90,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="mt-auto pt-4 border-t border-border">
               <div className="flex items-center gap-3 px-3 py-2 mb-2">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
-                  {user?.firstName?.charAt(0) ||
-                    user?.emailAddresses[0]?.emailAddress?.charAt(0)?.toUpperCase() ||
-                    "?"}
+                  {user?.username?.charAt(0)?.toUpperCase() || "?"}
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <p className="text-sm font-medium truncate">
-                    {user?.fullName || user?.firstName || "User"}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {user?.primaryEmailAddress?.emailAddress}
+                    {user?.username || "User"}
                   </p>
                 </div>
               </div>
@@ -120,7 +111,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {children}
       </main>

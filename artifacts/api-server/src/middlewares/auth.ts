@@ -1,59 +1,28 @@
-import { getAuth } from "@clerk/express";
 import type { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
 import { eq } from "drizzle-orm";
 import { db, usersTable, apiTokensTable } from "@workspace/db";
 
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required");
+}
+
 export interface AuthenticatedRequest extends Request {
-  clerkUserId?: string;
+  userId?: number;
   dbUser?: typeof usersTable.$inferSelect;
 }
 
-export async function getOrCreateUser(
-  clerkUserId: string,
-  email: string,
-): Promise<typeof usersTable.$inferSelect> {
-  const [byClerkId] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.clerkUserId, clerkUserId));
+export function signToken(userId: number): string {
+  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "30d" });
+}
 
-  if (byClerkId) {
-    // Update stale placeholder email if we now have the real one
-    if (byClerkId.email.includes("@unknown.local") && !email.includes("@unknown.local")) {
-      const [updated] = await db
-        .update(usersTable)
-        .set({ email })
-        .where(eq(usersTable.id, byClerkId.id))
-        .returning();
-      return updated;
-    }
-    return byClerkId;
+export function verifyToken(token: string): { userId: number } | null {
+  try {
+    return jwt.verify(token, JWT_SECRET) as { userId: number };
+  } catch {
+    return null;
   }
-
-  // Check by email — handles pre-created manual_ users
-  const [byEmail] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.email, email));
-
-  if (byEmail) {
-    if (byEmail.clerkUserId.startsWith("manual_")) {
-      const [updated] = await db
-        .update(usersTable)
-        .set({ clerkUserId })
-        .where(eq(usersTable.id, byEmail.id))
-        .returning();
-      return updated;
-    }
-    return byEmail;
-  }
-
-  const [newUser] = await db
-    .insert(usersTable)
-    .values({ clerkUserId, email })
-    .returning();
-
-  return newUser;
 }
 
 export function requireAuth(
@@ -61,12 +30,20 @@ export function requireAuth(
   res: Response,
   next: NextFunction,
 ): void {
-  const auth = getAuth(req);
-  if (!auth?.userId) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  req.clerkUserId = auth.userId;
+
+  const token = authHeader.slice(7);
+  const payload = verifyToken(token);
+  if (!payload) {
+    res.status(401).json({ error: "Invalid or expired token" });
+    return;
+  }
+
+  req.userId = payload.userId;
   next();
 }
 
@@ -75,17 +52,25 @@ export async function requireAdmin(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  const auth = getAuth(req);
-  if (!auth?.userId) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  req.clerkUserId = auth.userId;
+
+  const token = authHeader.slice(7);
+  const payload = verifyToken(token);
+  if (!payload) {
+    res.status(401).json({ error: "Invalid or expired token" });
+    return;
+  }
+
+  req.userId = payload.userId;
 
   const [user] = await db
     .select()
     .from(usersTable)
-    .where(eq(usersTable.clerkUserId, auth.userId));
+    .where(eq(usersTable.id, payload.userId));
 
   if (!user || !user.isAdmin) {
     res.status(403).json({ error: "Forbidden" });

@@ -60,7 +60,7 @@ export default function Dashboard() {
     <div className="p-6 md:p-8 max-w-6xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Welcome, {user?.email.split('@')[0]}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome, {user?.username || user?.email?.split('@')[0] || 'User'}</h1>
           <p className="text-muted-foreground mt-1">Here is your FlowAccess dashboard.</p>
         </div>
         

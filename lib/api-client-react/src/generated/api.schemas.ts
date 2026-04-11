@@ -26,8 +26,11 @@ export interface Plan {
 
 export interface UserProfile {
   id: number;
-  clerkUserId: string;
-  email: string;
+  username: string;
+  /** @nullable */
+  clerkUserId?: string | null;
+  /** @nullable */
+  email?: string | null;
   isAdmin: boolean;
   /** @nullable */
   planId?: number | null;
@@ -82,8 +85,11 @@ export interface UpdateSessionBody {
 
 export interface AdminUser {
   id: number;
-  clerkUserId: string;
-  email: string;
+  username: string;
+  /** @nullable */
+  clerkUserId?: string | null;
+  /** @nullable */
+  email?: string | null;
   isAdmin: boolean;
   /** @nullable */
   planId?: number | null;
@@ -97,7 +103,7 @@ export interface AdminUser {
 }
 
 export interface CreateUserBody {
-  email: string;
+  username: string;
   password: string;
   /** @nullable */
   planId?: number | null;

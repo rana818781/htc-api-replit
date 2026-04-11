@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 import { db, plansTable, usersTable } from "@workspace/db";
 import { logger } from "./logger";
 
@@ -27,30 +28,40 @@ const DEFAULT_PLANS = [
 ];
 
 export async function seedAdmin(): Promise<void> {
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail) return;
+  const adminUsername = process.env.ADMIN_USERNAME;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminUsername) return;
 
   const [user] = await db
     .select()
     .from(usersTable)
-    .where(eq(usersTable.email, adminEmail));
+    .where(eq(usersTable.username, adminUsername));
 
-  if (!user) {
-    logger.info({ adminEmail }, "Admin user not found in DB yet, skipping");
+  if (user) {
+    if (user.isAdmin) {
+      logger.info({ adminUsername }, "Admin already set, skipping");
+      return;
+    }
+    await db
+      .update(usersTable)
+      .set({ isAdmin: true })
+      .where(eq(usersTable.id, user.id));
+    logger.info({ adminUsername }, "Admin privileges granted on startup");
     return;
   }
 
-  if (user.isAdmin) {
-    logger.info({ adminEmail }, "Admin already set, skipping");
+  if (!adminPassword) {
+    logger.info({ adminUsername }, "Admin user not found and no ADMIN_PASSWORD set, skipping");
     return;
   }
 
-  await db
-    .update(usersTable)
-    .set({ isAdmin: true })
-    .where(eq(usersTable.email, adminEmail));
-
-  logger.info({ adminEmail }, "Admin privileges granted on startup");
+  const passwordHash = await bcrypt.hash(adminPassword, 10);
+  await db.insert(usersTable).values({
+    username: adminUsername,
+    passwordHash,
+    isAdmin: true,
+  });
+  logger.info({ adminUsername }, "Admin user created on startup");
 }
 
 export async function seedPlans(): Promise<void> {

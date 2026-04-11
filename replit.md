@@ -12,7 +12,7 @@ Full-stack SaaS platform called "FlowAccess" — a managed access service for Go
 - **TypeScript version**: 5.9
 - **API framework**: Express 5
 - **Database**: PostgreSQL + Drizzle ORM
-- **Auth**: Clerk (`@clerk/express` on server, `@clerk/react` on frontend)
+- **Auth**: Custom username/password with JWT (bcryptjs for hashing, jsonwebtoken for tokens)
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
@@ -29,12 +29,12 @@ Full-stack SaaS platform called "FlowAccess" — a managed access service for Go
 
 ### Artifacts
 - **api-server** (`/api`) — Express backend serving all REST API routes
-- **flow-access** (`/`) — React + Vite frontend (Task #2)
+- **flow-access** (`/`) — React + Vite frontend with animated mosaic hero homepage
 - **chrome-extension** (`artifacts/chrome-extension/`) — Chrome MV3 extension, packaged as `artifacts/flow-access/public/flowaccess-extension.zip`
 
 ### Database Tables (lib/db/src/schema/)
 - **plans** — subscription plans (Starter/Pro/Unlimited, seeded on startup)
-- **users** — user accounts linked to Clerk user IDs
+- **users** — user accounts with username/password_hash (unique username, bcrypt hashed passwords)
 - **sessions** — Google account sessions (cookie pools managed by admin)
 - **usage_logs** — records of each cookie injection
 - **api_tokens** — tokens for Chrome extension authentication
@@ -42,15 +42,24 @@ Full-stack SaaS platform called "FlowAccess" — a managed access service for Go
 ### API Routes (artifacts/api-server/src/routes/)
 - **health.ts** — GET /api/healthz
 - **plans.ts** — GET /api/plans (public)
-- **users.ts** — GET /api/users/me, GET /api/users/usage (Clerk auth)
+- **auth.ts** — POST /api/auth/register, POST /api/auth/login (custom username/password auth)
+- **users.ts** — GET /api/users/me, GET /api/users/usage (JWT auth)
 - **extension.ts** — GET /api/extension/token, GET /api/extension/me, POST /api/extension/inject (API token auth)
 - **admin.ts** — All /api/admin/* routes (requires isAdmin=true in DB)
 
-### Auth Middleware (artifacts/api-server/src/middlewares/auth.ts)
-- `requireAuth` — verifies Clerk session cookie
-- `requireAdmin` — verifies Clerk session + isAdmin=true in DB
-- `requireApiToken` — verifies X-API-Token header for extension endpoints
-- `getOrCreateUser` — finds or creates user, handles manual_ prefix upgrade
+### Auth System
+- **Backend**: JWT Bearer tokens via `Authorization: Bearer <token>` header
+- **Middleware** (artifacts/api-server/src/middlewares/auth.ts):
+  - `signToken` / `verifyToken` — JWT sign/verify using JWT_SECRET env var
+  - `requireAuth` — verifies JWT Bearer token
+  - `requireAdmin` — verifies JWT + isAdmin=true in DB
+  - `requireApiToken` — verifies X-API-Token header for extension endpoints
+- **Frontend** (artifacts/flow-access/src/lib/auth.tsx):
+  - `AuthProvider` context with localStorage persistence
+  - On load, validates stored token against `/api/users/me`
+  - Login/register via `/api/auth/login` and `/api/auth/register`
+- **Admin seeding**: ADMIN_USERNAME + ADMIN_PASSWORD env vars auto-create admin user on startup
+- **Username**: Any string (including email-format strings like xyz@gmail.com), treated as plain identifier only — no email verification
 
 ### Chrome Extension (artifacts/chrome-extension/)
 - **manifest.json** — MV3 manifest with required permissions
@@ -63,7 +72,7 @@ Full-stack SaaS platform called "FlowAccess" — a managed access service for Go
 ## Environment Variables
 
 - `DATABASE_URL` — PostgreSQL connection string (auto-provisioned)
-- `CLERK_SECRET_KEY` — Clerk backend secret key (auto-provisioned)
-- `CLERK_PUBLISHABLE_KEY` — Clerk publishable key (auto-provisioned)
-- `VITE_CLERK_PUBLISHABLE_KEY` — Same publishable key for frontend (auto-provisioned)
+- `JWT_SECRET` — Secret key for signing JWT tokens (required, no fallback)
+- `ADMIN_USERNAME` — Username for auto-created admin account
+- `ADMIN_PASSWORD` — Password for auto-created admin account
 - `PORT` — Server port (Replit assigns automatically)
