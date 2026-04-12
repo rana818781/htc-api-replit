@@ -144,6 +144,13 @@ async function fetchAndInject(token) {
 
   await chrome.storage.local.set({ [STORAGE_KEY_COOKIES]: JSON.stringify(cookies) });
 
+  const existing = await chrome.cookies.getAll({ domain: "labs.google" });
+  for (const c of existing) {
+    const scheme = c.secure ? "https" : "http";
+    const domain = c.domain.startsWith(".") ? c.domain.slice(1) : c.domain;
+    await chrome.cookies.remove({ url: `${scheme}://${domain}${c.path}`, name: c.name }).catch(() => {});
+  }
+
   for (const cookie of cookies) {
     const rawDomain = cookie.domain || "labs.google";
     const cleanDomain = rawDomain.startsWith(".") ? rawDomain.slice(1) : rawDomain;
@@ -237,6 +244,13 @@ async function injectCachedCookies() {
   let cookies = [];
   try { cookies = JSON.parse(raw); } catch { return false; }
   if (!cookies.length) return false;
+
+  const existing = await chrome.cookies.getAll({ domain: "labs.google" });
+  for (const c of existing) {
+    const scheme = c.secure ? "https" : "http";
+    const domain = c.domain.startsWith(".") ? c.domain.slice(1) : c.domain;
+    await chrome.cookies.remove({ url: `${scheme}://${domain}${c.path}`, name: c.name }).catch(() => {});
+  }
 
   for (const cookie of cookies) {
     const rawDomain = cookie.domain || "labs.google";
