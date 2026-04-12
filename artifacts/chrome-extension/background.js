@@ -202,6 +202,47 @@ async function fetchAndInject(token) {
   return { success: true, cookiesInjected: cookies.length, creditsRemaining };
 }
 
+async function refreshCookieCache(token) {
+  try {
+    const res = await fetch(`${API_BASE}/api/extension/inject`, {
+      method: "POST",
+      headers: { "X-API-Token": token, "Content-Type": "application/json" },
+    });
+
+    if (!res.ok) return;
+
+    const { cookieData, creditsRemaining } = await res.json();
+
+    let cookies = [];
+    const trimmed = (cookieData || "").trim();
+    if (trimmed.startsWith("[")) {
+      try { cookies = JSON.parse(trimmed); } catch { cookies = []; }
+    } else {
+      cookies = trimmed.split(";").map((part) => {
+        const idx = part.indexOf("=");
+        if (idx === -1) return null;
+        const name = part.slice(0, idx).trim();
+        const value = part.slice(idx + 1).trim();
+        if (!name) return null;
+        const secure = name.startsWith("__Secure-") || name.startsWith("__Host-");
+        return { name, value, secure, httpOnly: false, session: true, domain: "labs.google" };
+      }).filter(Boolean);
+    }
+
+    await chrome.storage.local.set({ [STORAGE_KEY_COOKIES]: JSON.stringify(cookies) });
+
+    const cached = await chrome.storage.local.get(STORAGE_KEY_USER);
+    if (cached[STORAGE_KEY_USER]) {
+      cached[STORAGE_KEY_USER].creditsRemaining = creditsRemaining;
+      await chrome.storage.local.set({ [STORAGE_KEY_USER]: cached[STORAGE_KEY_USER] });
+    }
+
+    console.log(`[FlowAccess] Cookie cache refreshed (${cookies.length} cookies)`);
+  } catch (e) {
+    console.warn("[FlowAccess] Cache refresh failed:", e?.message || e);
+  }
+}
+
 async function injectCachedCookies() {
   const data = await chrome.storage.local.get(STORAGE_KEY_COOKIES);
   const raw = data[STORAGE_KEY_COOKIES];
@@ -269,10 +310,16 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     const token = await getToken();
     if (!token) return;
 
-    const result = await fetchAndInject(token);
+    const hasCached = await injectCachedCookies();
 
-    if (result.success) {
+    if (hasCached) {
       await markSkip(tabId);
+      refreshCookieCache(token);
+    } else {
+      const result = await fetchAndInject(token);
+      if (result.success) {
+        await markSkip(tabId);
+      }
     }
   }
 });
@@ -288,9 +335,10 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     const disabledData = await chrome.storage.local.get(STORAGE_KEY_DISABLED);
     if (disabledData[STORAGE_KEY_DISABLED]) return;
     const tabs = await chrome.tabs.query({ url: "https://labs.google/fx/tools/flow*" });
-    for (const tab of tabs) {
-      const result = await fetchAndInject(token);
-      if (result.success) {
+    if (tabs.length > 0) {
+      await refreshCookieCache(token);
+      await injectCachedCookies();
+      for (const tab of tabs) {
         await markSkip(tab.id);
       }
     }
