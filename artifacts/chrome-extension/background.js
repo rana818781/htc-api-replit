@@ -221,7 +221,6 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
   if (result.success) {
     await markSkip(tabId);
-    setTimeout(() => chrome.tabs.reload(tabId), 500);
   }
 });
 
@@ -240,7 +239,6 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
       const result = await fetchAndInject(token);
       if (result.success) {
         await markSkip(tab.id);
-        chrome.tabs.reload(tab.id);
       }
     }
   }
