@@ -305,6 +305,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       const result = await fetchAndInject(token);
       if (result.success) {
         await markSkip(tabId);
+        chrome.tabs.reload(tabId);
       }
     }
   }
