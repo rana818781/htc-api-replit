@@ -202,25 +202,78 @@ async function fetchAndInject(token) {
   return { success: true, cookiesInjected: cookies.length, creditsRemaining };
 }
 
+async function injectCachedCookies() {
+  const data = await chrome.storage.local.get(STORAGE_KEY_COOKIES);
+  const raw = data[STORAGE_KEY_COOKIES];
+  if (!raw) return false;
+
+  let cookies = [];
+  try { cookies = JSON.parse(raw); } catch { return false; }
+  if (!cookies.length) return false;
+
+  for (const cookie of cookies) {
+    const rawDomain = cookie.domain || "labs.google";
+    const cleanDomain = rawDomain.startsWith(".") ? rawDomain.slice(1) : rawDomain;
+    const cookieUrl = `https://${cleanDomain}`;
+
+    const details = {
+      url: cookieUrl,
+      name: cookie.name,
+      value: cookie.value,
+      path: cookie.path || "/",
+      secure: cookie.secure === true,
+      httpOnly: false,
+    };
+
+    if (!cookie.name.startsWith("__Host-")) {
+      details.domain = rawDomain;
+    }
+
+    if (cookie.sameSite === "lax") details.sameSite = "lax";
+    else if (cookie.sameSite === "strict") details.sameSite = "strict";
+    else details.sameSite = "no_restriction";
+
+    if (!cookie.session && cookie.expirationDate) {
+      details.expirationDate = Math.floor(cookie.expirationDate);
+    }
+
+    await chrome.cookies.set(details).catch(() => {});
+  }
+
+  console.log(`[FlowAccess] Injected ${cookies.length} cached cookies (pre-load)`);
+  return true;
+}
+
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  if (changeInfo.status !== "complete") return;
   if (!tab.url?.includes("labs.google/fx/tools/flow")) return;
 
-  if (await isSkipped(tabId)) {
-    console.log(`[FlowAccess] Skipping tab ${tabId} (already injected)`);
+  if (changeInfo.status === "loading") {
+    const disabledData = await chrome.storage.local.get(STORAGE_KEY_DISABLED);
+    if (disabledData[STORAGE_KEY_DISABLED]) return;
+    const token = await getToken();
+    if (!token) return;
+
+    await injectCachedCookies();
     return;
   }
 
-  const disabledData = await chrome.storage.local.get(STORAGE_KEY_DISABLED);
-  if (disabledData[STORAGE_KEY_DISABLED]) return;
+  if (changeInfo.status === "complete") {
+    if (await isSkipped(tabId)) {
+      console.log(`[FlowAccess] Skipping tab ${tabId} (already injected)`);
+      return;
+    }
 
-  const token = await getToken();
-  if (!token) return;
+    const disabledData = await chrome.storage.local.get(STORAGE_KEY_DISABLED);
+    if (disabledData[STORAGE_KEY_DISABLED]) return;
 
-  const result = await fetchAndInject(token);
+    const token = await getToken();
+    if (!token) return;
 
-  if (result.success) {
-    await markSkip(tabId);
+    const result = await fetchAndInject(token);
+
+    if (result.success) {
+      await markSkip(tabId);
+    }
   }
 });
 
