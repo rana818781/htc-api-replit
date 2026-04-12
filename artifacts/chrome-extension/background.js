@@ -144,20 +144,6 @@ async function fetchAndInject(token) {
 
   await chrome.storage.local.set({ [STORAGE_KEY_COOKIES]: JSON.stringify(cookies) });
 
-  const existing = await chrome.cookies.getAll({ domain: "labs.google" });
-  for (const c of existing) {
-    const scheme = c.secure ? "https" : "http";
-    const domain = c.domain.startsWith(".") ? c.domain.slice(1) : c.domain;
-    await chrome.cookies.remove({ url: `${scheme}://${domain}${c.path}`, name: c.name }).catch(() => {});
-  }
-
-  try {
-    await chrome.browsingData.remove(
-      { origins: ["https://labs.google"] },
-      { indexedDB: true, cacheStorage: true, serviceWorkers: true, localStorage: true }
-    );
-  } catch (e) {}
-
   for (const cookie of cookies) {
     const rawDomain = cookie.domain || "labs.google";
     const cleanDomain = rawDomain.startsWith(".") ? rawDomain.slice(1) : rawDomain;
