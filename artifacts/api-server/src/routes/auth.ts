@@ -54,6 +54,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       id: user.id,
       username: user.username,
       isAdmin: user.isAdmin,
+      isReseller: user.isReseller,
     },
   });
 });
@@ -90,6 +91,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       id: user.id,
       username: user.username,
       isAdmin: user.isAdmin,
+      isReseller: user.isReseller,
     },
   });
 });
@@ -109,6 +111,7 @@ router.get("/auth/me", requireAuth, async (req: AuthenticatedRequest, res): Prom
     id: user.id,
     username: user.username,
     isAdmin: user.isAdmin,
+    isReseller: user.isReseller,
   });
 });
 

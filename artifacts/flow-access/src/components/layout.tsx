@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LogOut, LayoutDashboard, CreditCard, Activity, ShieldAlert, Menu, X } from "lucide-react";
+import { LogOut, LayoutDashboard, CreditCard, Activity, ShieldAlert, UserPlus, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useGetCurrentUser } from "@workspace/api-client-react";
@@ -12,6 +12,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { data: apiUser } = useGetCurrentUser({ query: { enabled: isSignedIn } });
 
   const isAdmin = apiUser?.isAdmin === true;
+  const isReseller = apiUser?.isReseller === true;
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -70,6 +71,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </Link>
                 );
               })}
+
+              {(isReseller || isAdmin) && (
+                <Link href="/reseller" onClick={() => setIsMobileMenuOpen(false)}>
+                  <div
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
+                      location === "/reseller"
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
+                    }`}
+                  >
+                    <UserPlus className="h-5 w-5" />
+                    <span>Reseller Panel</span>
+                  </div>
+                </Link>
+              )}
 
               {isAdmin && (
                 <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>

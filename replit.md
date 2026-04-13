@@ -46,6 +46,7 @@ Full-stack SaaS platform called "FlowAccess" — a managed access service for Go
 - **users.ts** — GET /api/users/me, GET /api/users/usage (JWT auth)
 - **extension.ts** — GET /api/extension/token, GET /api/extension/me, POST /api/extension/inject (API token auth)
 - **admin.ts** — All /api/admin/* routes (requires isAdmin=true in DB)
+- **reseller.ts** — All /api/reseller/* routes (requires isReseller=true or isAdmin=true)
 
 ### Auth System
 - **Backend**: JWT Bearer tokens via `Authorization: Bearer <token>` header
@@ -53,6 +54,7 @@ Full-stack SaaS platform called "FlowAccess" — a managed access service for Go
   - `signToken` / `verifyToken` — JWT sign/verify using JWT_SECRET env var
   - `requireAuth` — verifies JWT Bearer token
   - `requireAdmin` — verifies JWT + isAdmin=true in DB
+  - `requireReseller` — verifies JWT + (isReseller=true OR isAdmin=true) in DB
   - `requireApiToken` — verifies X-API-Token header for extension endpoints
 - **Frontend** (artifacts/flow-access/src/lib/auth.tsx):
   - `AuthProvider` context with localStorage persistence

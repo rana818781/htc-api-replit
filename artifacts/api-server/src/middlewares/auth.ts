@@ -81,6 +81,40 @@ export async function requireAdmin(
   next();
 }
 
+export async function requireReseller(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const token = authHeader.slice(7);
+  const payload = verifyToken(token);
+  if (!payload) {
+    res.status(401).json({ error: "Invalid or expired token" });
+    return;
+  }
+
+  req.userId = payload.userId;
+
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, payload.userId));
+
+  if (!user || (!user.isAdmin && !user.isReseller)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  req.dbUser = user;
+  next();
+}
+
 export async function requireApiToken(
   req: AuthenticatedRequest,
   res: Response,

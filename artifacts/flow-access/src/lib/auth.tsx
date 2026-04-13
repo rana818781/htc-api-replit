@@ -6,6 +6,7 @@ interface AuthUser {
   id: number;
   username: string;
   isAdmin: boolean;
+  isReseller: boolean;
 }
 
 interface AuthContextType {
@@ -65,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return res.json();
         })
         .then((data) => {
-          setUser({ id: data.id, username: data.username, isAdmin: data.isAdmin });
+          setUser({ id: data.id, username: data.username, isAdmin: data.isAdmin, isReseller: data.isReseller });
         })
         .catch(() => {
           setToken(null);

@@ -65,6 +65,7 @@ const userSchema = z.object({
   planId: z.string().optional(),
   creditsTotal: z.coerce.number().min(0).default(0),
   isAdmin: z.boolean().default(false),
+  isReseller: z.boolean().default(false),
 });
 
 const editUserSchema = z.object({
@@ -72,6 +73,7 @@ const editUserSchema = z.object({
   creditsTotal: z.coerce.number().min(0).default(0),
   creditsUsed: z.coerce.number().min(0).default(0),
   isAdmin: z.boolean().default(false),
+  isReseller: z.boolean().default(false),
 });
 
 export default function Admin() {
@@ -424,7 +426,7 @@ function UsersTab() {
 
   const createForm = useForm<z.infer<typeof userSchema>>({
     resolver: zodResolver(userSchema),
-    defaultValues: { username: "", password: "", creditsTotal: 0, isAdmin: false, planId: "" },
+    defaultValues: { username: "", password: "", creditsTotal: 0, isAdmin: false, isReseller: false, planId: "" },
   });
 
   const editForm = useForm<z.infer<typeof editUserSchema>>({
@@ -501,12 +503,20 @@ function UsersTab() {
                     <FormItem><FormLabel>Total Credits</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
                 </div>
-                <FormField control={createForm.control} name="isAdmin" render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                    <div className="space-y-1 leading-none"><FormLabel>Admin</FormLabel></div>
-                  </FormItem>
-                )} />
+                <div className="flex gap-4">
+                  <FormField control={createForm.control} name="isAdmin" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 flex-1">
+                      <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <div className="space-y-1 leading-none"><FormLabel>Admin</FormLabel></div>
+                    </FormItem>
+                  )} />
+                  <FormField control={createForm.control} name="isReseller" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 flex-1">
+                      <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <div className="space-y-1 leading-none"><FormLabel>Reseller</FormLabel></div>
+                    </FormItem>
+                  )} />
+                </div>
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>Create</Button>
               </form>
             </Form>
@@ -521,7 +531,7 @@ function UsersTab() {
                 <TableHead>Email</TableHead>
                 <TableHead>Plan</TableHead>
                 <TableHead>Credits (Used/Total)</TableHead>
-                <TableHead>Admin</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -531,7 +541,11 @@ function UsersTab() {
                   <TableCell className="font-medium">{u.username || u.email}</TableCell>
                   <TableCell>{u.planName || "N/A"}</TableCell>
                   <TableCell>{u.creditsUsed} / {u.creditsTotal}</TableCell>
-                  <TableCell><Badge variant={u.isAdmin ? "default" : "outline"}>{u.isAdmin ? "Yes" : "No"}</Badge></TableCell>
+                  <TableCell className="space-x-1">
+                    {u.isAdmin && <Badge variant="default">Admin</Badge>}
+                    {u.isReseller && <Badge className="bg-blue-600">Reseller</Badge>}
+                    {!u.isAdmin && !u.isReseller && <Badge variant="outline">User</Badge>}
+                  </TableCell>
                   <TableCell className="text-right space-x-2">
                     <Dialog open={editUserId === u.id} onOpenChange={(open) => {
                       if(open) {
@@ -539,7 +553,8 @@ function UsersTab() {
                           planId: u.planId ? u.planId.toString() : "none", 
                           creditsTotal: u.creditsTotal, 
                           creditsUsed: u.creditsUsed,
-                          isAdmin: u.isAdmin 
+                          isAdmin: u.isAdmin,
+                          isReseller: u.isReseller 
                         });
                         setEditUserId(u.id);
                       } else setEditUserId(null);
@@ -569,6 +584,12 @@ function UsersTab() {
                                 </FormItem>
                               )} />
                             </div>
+                            <FormField control={editForm.control} name="isReseller" render={({ field }) => (
+                              <FormItem className="flex flex-row items-center space-x-3 rounded-md border p-3">
+                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                <FormLabel className="!mt-0">Reseller</FormLabel>
+                              </FormItem>
+                            )} />
                             <div className="grid grid-cols-2 gap-4">
                               <FormField control={editForm.control} name="creditsTotal" render={({ field }) => (
                                 <FormItem><FormLabel>Total Credits</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>

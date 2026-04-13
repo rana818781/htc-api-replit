@@ -10,6 +10,8 @@ export const usersTable = pgTable("users", {
   clerkUserId: varchar("clerk_user_id", { length: 255 }),
   email: varchar("email", { length: 255 }),
   isAdmin: boolean("is_admin").notNull().default(false),
+  isReseller: boolean("is_reseller").notNull().default(false),
+  addedBy: integer("added_by"),
   planId: integer("plan_id").references(() => plansTable.id),
   creditsTotal: integer("credits_total").notNull().default(0),
   creditsUsed: integer("credits_used").notNull().default(0),

@@ -30,6 +30,7 @@ router.get("/users/me", requireAuth, async (req: AuthenticatedRequest, res): Pro
     username: user.username,
     email: user.email,
     isAdmin: user.isAdmin,
+    isReseller: user.isReseller,
     planId: user.planId,
     planName,
     creditsTotal: user.creditsTotal,

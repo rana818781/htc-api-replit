@@ -13,6 +13,7 @@ import Plans from "./pages/plans";
 import Usage from "./pages/usage";
 import Admin from "./pages/admin";
 import AdminAddSession from "./pages/admin-add-session";
+import ResellerPanel from "./pages/reseller";
 import NotFound from "./pages/not-found";
 import AuthPage from "./pages/auth";
 import { Layout } from "./components/layout";
@@ -63,6 +64,25 @@ function AdminRoute({ component: Component }: { component: ComponentType }) {
   );
 }
 
+function ResellerRoute({ component: Component }: { component: ComponentType }) {
+  const { isLoaded, isSignedIn, user } = useAuth();
+
+  if (!isLoaded) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!isSignedIn) return <Redirect to="/sign-in" />;
+  if (!user?.isReseller && !user?.isAdmin) return <Redirect to="/dashboard" />;
+  return (
+    <Layout>
+      <Component />
+    </Layout>
+  );
+}
+
 function PublicRouteWithLayout({ component: Component }: { component: ComponentType }) {
   return (
     <Layout>
@@ -95,6 +115,7 @@ function AppRoutes() {
         <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
         <Route path="/plans" component={() => <PublicRouteWithLayout component={Plans} />} />
         <Route path="/usage" component={() => <ProtectedRoute component={Usage} />} />
+        <Route path="/reseller" component={() => <ResellerRoute component={ResellerPanel} />} />
         <Route path="/admin/sessions/new" component={() => <AdminRoute component={AdminAddSession} />} />
         <Route path="/admin" component={() => <AdminRoute component={Admin} />} />
         <Route component={() => <Layout><NotFound /></Layout>} />

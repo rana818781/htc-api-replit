@@ -5,6 +5,7 @@ import plansRouter from "./plans";
 import usersRouter from "./users";
 import extensionRouter from "./extension";
 import adminRouter from "./admin";
+import resellerRouter from "./reseller";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(plansRouter);
 router.use(usersRouter);
 router.use(extensionRouter);
 router.use(adminRouter);
+router.use(resellerRouter);
 
 export default router;

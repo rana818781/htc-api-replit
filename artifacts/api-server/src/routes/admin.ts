@@ -141,6 +141,8 @@ router.get("/admin/users", async (req, res): Promise<void> => {
       username: usersTable.username,
       email: usersTable.email,
       isAdmin: usersTable.isAdmin,
+      isReseller: usersTable.isReseller,
+      addedBy: usersTable.addedBy,
       planId: usersTable.planId,
       planName: plansTable.name,
       creditsTotal: usersTable.creditsTotal,
@@ -156,7 +158,7 @@ router.get("/admin/users", async (req, res): Promise<void> => {
 });
 
 router.post("/admin/users", async (req: AuthenticatedRequest, res): Promise<void> => {
-  const { username, password, planId, creditsTotal, isAdmin } = req.body;
+  const { username, password, planId, creditsTotal, isAdmin, isReseller } = req.body;
 
   if (!username || !password) {
     res.status(400).json({ error: "username and password are required" });
@@ -190,6 +192,8 @@ router.post("/admin/users", async (req: AuthenticatedRequest, res): Promise<void
         planId: planId ?? null,
         creditsTotal: creditsTotal ?? 0,
         isAdmin: isAdmin ?? false,
+        isReseller: isReseller ?? false,
+        addedBy: req.dbUser!.id,
       })
       .returning();
   } catch (dbErr: unknown) {
@@ -207,7 +211,8 @@ router.post("/admin/users", async (req: AuthenticatedRequest, res): Promise<void
     planName = plan?.name ?? null;
   }
 
-  res.status(201).json({ ...newUser, planName });
+  const { passwordHash: _, ...safeUser } = newUser;
+  res.status(201).json({ ...safeUser, planName });
 });
 
 router.patch("/admin/users/:id", async (req: AuthenticatedRequest, res): Promise<void> => {
@@ -218,7 +223,7 @@ router.patch("/admin/users/:id", async (req: AuthenticatedRequest, res): Promise
     return;
   }
 
-  const { planId, creditsTotal, creditsUsed, isAdmin } = req.body;
+  const { planId, creditsTotal, creditsUsed, isAdmin, isReseller } = req.body;
   const updates: Record<string, unknown> = {};
   if (planId !== undefined) updates.planId = planId;
   if (creditsTotal !== undefined) updates.creditsTotal = creditsTotal;
@@ -231,6 +236,7 @@ router.patch("/admin/users/:id", async (req: AuthenticatedRequest, res): Promise
     }
     updates.isAdmin = isAdmin;
   }
+  if (isReseller !== undefined) updates.isReseller = isReseller;
 
   const [user] = await db
     .update(usersTable)
@@ -252,7 +258,8 @@ router.patch("/admin/users/:id", async (req: AuthenticatedRequest, res): Promise
     planName = plan?.name ?? null;
   }
 
-  res.json({ ...user, planName });
+  const { passwordHash: _, ...safeUser } = user;
+  res.json({ ...safeUser, planName });
 });
 
 router.delete("/admin/users/:id", async (req, res): Promise<void> => {
