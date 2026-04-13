@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
 
 import Home from "./pages/home";
+import UserDashboard from "./pages/user-dashboard";
 import Dashboard from "./pages/dashboard";
 import Plans from "./pages/plans";
 import Usage from "./pages/usage";
@@ -17,6 +18,7 @@ import ResellerPanel from "./pages/reseller";
 import NotFound from "./pages/not-found";
 import AuthPage from "./pages/auth";
 import { Layout } from "./components/layout";
+import { UserLayout } from "./components/user-layout";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -41,6 +43,34 @@ function ProtectedRoute({ component: Component }: { component: ComponentType }) 
     <Layout>
       <Component />
     </Layout>
+  );
+}
+
+function UserProtectedRoute({ component: Component }: { component: ComponentType }) {
+  const { isLoaded, isSignedIn } = useAuth();
+  const { data: apiUser, isLoading } = useGetCurrentUser();
+
+  if (!isLoaded || isLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#0a0a0a]">
+        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!isSignedIn) return <Redirect to="/sign-in" />;
+
+  if (apiUser?.isAdmin || apiUser?.isReseller) {
+    return (
+      <Layout>
+        <Dashboard />
+      </Layout>
+    );
+  }
+
+  return (
+    <UserLayout>
+      <Component />
+    </UserLayout>
   );
 }
 
@@ -112,7 +142,7 @@ function AppRoutes() {
         <Route path="/" component={HomeRedirect} />
         <Route path="/sign-in" component={SignInRedirectIfAuthed} />
         <Route path="/sign-up" component={SignUpRedirectIfAuthed} />
-        <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
+        <Route path="/dashboard" component={() => <UserProtectedRoute component={UserDashboard} />} />
         <Route path="/plans" component={() => <PublicRouteWithLayout component={Plans} />} />
         <Route path="/usage" component={() => <ProtectedRoute component={Usage} />} />
         <Route path="/reseller" component={() => <ResellerRoute component={ResellerPanel} />} />
