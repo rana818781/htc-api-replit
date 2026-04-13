@@ -37,40 +37,27 @@
     return false;
   }
 
-  function findSendButton(container) {
-    var root = container || document.body;
+  function findSendButton() {
+    var allButtons = document.querySelectorAll("button");
+    for (var i = 0; i < allButtons.length; i++) {
+      var btn = allButtons[i];
 
-    var ariaButtons = root.querySelectorAll(
-      "button[aria-label='Send'], button[aria-label='send'], button[aria-label='Submit'], button[aria-label='Generate']"
+      var icon = btn.querySelector("i.google-symbols");
+      if (icon && icon.textContent.trim() === "arrow_forward") {
+        var hiddenSpan = btn.querySelector("span");
+        if (hiddenSpan && hiddenSpan.textContent.trim() === "Create") {
+          return btn;
+        }
+        return btn;
+      }
+    }
+
+    var ariaButtons = document.querySelectorAll(
+      "button[aria-label='Send'], button[aria-label='send'], button[aria-label='Create'], button[aria-label='Generate']"
     );
     if (ariaButtons.length > 0) return ariaButtons[ariaButtons.length - 1];
 
-    var allButtons = root.querySelectorAll("button");
-    var candidates = [];
-
-    for (var i = 0; i < allButtons.length; i++) {
-      var btn = allButtons[i];
-      var rect = btn.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) continue;
-      if (rect.width > 56 || rect.height > 56) continue;
-      if (rect.bottom < window.innerHeight * 0.6) continue;
-
-      var svg = btn.querySelector("svg");
-      if (!svg) continue;
-
-      var btnText = (btn.textContent || "").replace(/\s/g, "");
-      if (btnText.length > 3) continue;
-
-      candidates.push({ btn: btn, right: rect.right, bottom: rect.bottom });
-    }
-
-    if (candidates.length === 0) return null;
-
-    candidates.sort(function (a, b) {
-      return b.right - a.right || b.bottom - a.bottom;
-    });
-
-    return candidates[0].btn;
+    return null;
   }
 
   function chargeCredits() {
