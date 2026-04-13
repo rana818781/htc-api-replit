@@ -1,10 +1,10 @@
-// FlowAccess — Project Filter v11
+// Veo Flow API — Project Filter v11
 // Hides old projects and hero banner. Header lock handled by header_lock.js.
 
 (function () {
   "use strict";
 
-  console.log("[FlowAccess] project_filter.js loaded");
+  console.log("[VeoFlowAPI] project_filter.js loaded");
 
   function findNewProjectButton() {
     for (const btn of document.querySelectorAll("button")) {
@@ -73,7 +73,7 @@
   const obs = new MutationObserver(patrol);
 
   function start() {
-    console.log("[FlowAccess] project_filter starting patrol");
+    console.log("[VeoFlowAPI] project_filter starting patrol");
     obs.observe(document.body, { childList: true, subtree: true });
     [300, 600, 1000, 1500, 2500, 4000, 7000, 12000].forEach(ms =>
       setTimeout(patrol, ms)

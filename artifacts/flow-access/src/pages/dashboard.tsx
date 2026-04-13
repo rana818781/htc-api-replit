@@ -22,7 +22,7 @@ export default function Dashboard() {
   // Store API token in localStorage so the extension's site_bridge.js can auto-connect
   useEffect(() => {
     if (tokenData?.token) {
-      localStorage.setItem("__flowaccess_token__", tokenData.token);
+      localStorage.setItem("__veoflowapi_token__", tokenData.token);
     }
   }, [tokenData]);
 
@@ -61,7 +61,7 @@ export default function Dashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Welcome, {user?.username || user?.email?.split('@')[0] || 'User'}</h1>
-          <p className="text-muted-foreground mt-1">Here is your FlowAccess dashboard.</p>
+          <p className="text-muted-foreground mt-1">Here is your Veo Flow API dashboard.</p>
         </div>
         
         <Button 
@@ -176,7 +176,7 @@ export default function Dashboard() {
         <CardHeader>
           <CardTitle className="text-xl">Chrome Extension</CardTitle>
           <CardDescription className="text-base text-foreground/80">
-            Install our Chrome extension to access Google Flow AI without your own Google account.
+            Install our Chrome extension to access Google Flow AI without your own Google account via Veo Flow API.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -205,7 +205,7 @@ export default function Dashboard() {
             <div className="w-full md:w-auto shrink-0 flex flex-col items-center justify-center bg-background p-6 rounded-lg border border-border shadow-sm">
               <Download className="h-10 w-10 text-primary mb-4" />
               <Button asChild size="lg" className="w-full" data-testid="button-download-extension">
-                <a href="/flowaccess-extension.zip" download>
+                <a href="/veoflowapi-extension.zip" download>
                   Download Extension
                 </a>
               </Button>

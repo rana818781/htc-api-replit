@@ -1,8 +1,8 @@
-# FlowAccess Workspace
+# Veo Flow API Workspace
 
 ## Overview
 
-Full-stack SaaS platform called "FlowAccess" — a managed access service for Google Flow (Google's AI video generation tool at labs.google/fx/tools/flow). Users subscribe to plans, receive credits, and use a Chrome extension that automatically injects Google account session cookies into the browser so they can use Google Flow without needing their own Google account.
+Full-stack SaaS platform called "Veo Flow API" — a managed access service for Google Flow (Google's AI video generation tool at labs.google/fx/tools/flow). Users subscribe to plans, receive credits, and use a Chrome extension that automatically injects Google account session cookies into the browser so they can use Google Flow without needing their own Google account.
 
 ## Stack
 
@@ -30,7 +30,7 @@ Full-stack SaaS platform called "FlowAccess" — a managed access service for Go
 ### Artifacts
 - **api-server** (`/api`) — Express backend serving all REST API routes
 - **flow-access** (`/`) — React + Vite frontend with animated mosaic hero homepage
-- **chrome-extension** (`artifacts/chrome-extension/`) — Chrome MV3 extension, packaged as `artifacts/flow-access/public/flowaccess-extension.zip`
+- **chrome-extension** (`artifacts/chrome-extension/`) — Chrome MV3 extension "Veo Flow API", packaged as `artifacts/flow-access/public/veoflowapi-extension.zip`
 
 ### Database Tables (lib/db/src/schema/)
 - **plans** — subscription plans (Starter/Pro/Unlimited, seeded on startup)

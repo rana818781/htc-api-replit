@@ -1,12 +1,12 @@
-// FlowAccess Extension — Site Bridge v2.0
+// Veo Flow API Extension — Site Bridge v2.0
 // Runs on ultraflow.replit.app
 // Auto-detects the user's API token and sends it to the background worker
 
 (function () {
   const SITE_ORIGIN = "https://ultraflow.replit.app";
-  const LS_KEY = "__flowaccess_token__";
+  const LS_KEY = "__veoflowapi_token__";
 
-  // Check if we're on the FlowAccess site
+  // Check if we're on the Veo Flow API site
   if (!location.href.includes("replit.app") && !location.href.includes("replit.dev")) return;
 
   function tryConnect() {
@@ -19,7 +19,7 @@
       (resp) => {
         if (chrome.runtime.lastError) return;
         if (resp?.success) {
-          console.debug("[FlowAccess] Extension connected ✓");
+          console.debug("[VeoFlowAPI] Extension connected ✓");
         }
       }
     );

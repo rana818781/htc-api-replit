@@ -21,8 +21,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const TOKEN_KEY = "flowaccess_token";
-const USER_KEY = "flowaccess_user";
+const TOKEN_KEY = "veoflowapi_token";
+const USER_KEY = "veoflowapi_user";
 
 const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
 

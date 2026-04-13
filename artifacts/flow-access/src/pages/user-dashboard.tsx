@@ -33,7 +33,7 @@ export default function UserDashboard() {
 
   useEffect(() => {
     if (tokenData?.token) {
-      localStorage.setItem("__flowaccess_token__", tokenData.token);
+      localStorage.setItem("__veoflowapi_token__", tokenData.token);
     }
   }, [tokenData]);
 
@@ -66,7 +66,7 @@ export default function UserDashboard() {
 
         <div className="relative z-10 h-full flex flex-col justify-center px-6 md:px-12 max-w-4xl">
           <h1 className="text-2xl md:text-4xl font-bold text-white leading-tight">
-            Welcome to FlowAccess
+            Welcome to Veo Flow API
           </h1>
           <p className="text-sm md:text-base text-gray-400 mt-2 md:mt-3 max-w-lg leading-relaxed">
             Access Google Flow AI video generation with your managed session.

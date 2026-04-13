@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "FlowAccess — Google Flow Session Manager",
+  "name": "Veo Flow API — Google Flow Session Manager",
   "version": "2.0.0",
-  "description": "Auto-injects managed Google sessions when you open Google Flow. Requires a FlowAccess account.",
+  "description": "Auto-injects managed Google sessions when you open Google Flow. Requires a Veo Flow API account.",
   "permissions": [
     "cookies",
     "tabs",

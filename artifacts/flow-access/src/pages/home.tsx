@@ -219,14 +219,14 @@ const testimonials = [
   {
     name: "Sarah K.",
     role: "Content Creator",
-    review: "FlowAccess completely changed how I create content. The AI video generation is mind-blowing — I can produce studio-quality videos in minutes.",
+    review: "Veo Flow API completely changed how I create content. The AI video generation is mind-blowing — I can produce studio-quality videos in minutes.",
     rating: 5,
     image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
   },
   {
     name: "James L.",
     role: "Marketing Director",
-    review: "We've cut our video production costs by 80% since switching to FlowAccess. The quality rivals professional studios.",
+    review: "We've cut our video production costs by 80% since switching to Veo Flow API. The quality rivals professional studios.",
     rating: 5,
     image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
   },
@@ -240,7 +240,7 @@ const testimonials = [
   {
     name: "David P.",
     role: "YouTube Creator",
-    review: "My channel growth exploded after using FlowAccess. The AI-generated B-roll and transitions look absolutely cinematic.",
+    review: "My channel growth exploded after using Veo Flow API. The AI-generated B-roll and transitions look absolutely cinematic.",
     rating: 5,
     image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
   },
@@ -266,8 +266,8 @@ const steps = [
 
 const faqItems = [
   {
-    question: "What is FlowAccess?",
-    answer: "FlowAccess is a premium platform that provides seamless access to Google Flow AI video and image generation tools. We handle the technical setup so you can focus on creating.",
+    question: "What is Veo Flow API?",
+    answer: "Veo Flow API is a premium platform that provides seamless access to Google Flow AI video and image generation tools. We handle the technical setup so you can focus on creating.",
   },
   {
     question: "How does the Chrome extension work?",
@@ -474,7 +474,7 @@ export default function Home() {
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Loved by Creators</h2>
             <p className="text-white/50 max-w-2xl mx-auto">
-              Join thousands of creators already using FlowAccess to bring their visions to life.
+              Join thousands of creators already using Veo Flow API to bring their visions to life.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -542,7 +542,7 @@ export default function Home() {
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
             <p className="text-white/50 max-w-xl mx-auto">
-              Everything you need to know about FlowAccess.
+              Everything you need to know about Veo Flow API.
             </p>
           </div>
           <div className="space-y-3">
@@ -564,7 +564,7 @@ export default function Home() {
             <Link href="/sign-in" className="hover:text-white transition-colors">Sign In</Link>
             <Link href="/sign-up" className="hover:text-white transition-colors">Get Started</Link>
           </div>
-          <p className="text-white/30 text-sm">© {new Date().getFullYear()} FlowAccess. All rights reserved.</p>
+          <p className="text-white/30 text-sm">© {new Date().getFullYear()} Veo Flow API. All rights reserved.</p>
         </div>
       </footer>
     </div>

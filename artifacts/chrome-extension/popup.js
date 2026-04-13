@@ -1,4 +1,4 @@
-// FlowAccess Extension — Popup Script v2.0
+// Veo Flow API Extension — Popup Script v2.0
 
 const SITE_URL = "https://ultraflow.replit.app";
 const STORAGE_KEY_TOKEN = "fa_api_token";
@@ -95,7 +95,7 @@ document.getElementById("connect-btn").addEventListener("click", async () => {
   });
 });
 
-// Open FlowAccess site
+// Open Veo Flow API site
 document.getElementById("open-site-btn").addEventListener("click", () => {
   chrome.tabs.create({ url: SITE_URL });
   window.close();

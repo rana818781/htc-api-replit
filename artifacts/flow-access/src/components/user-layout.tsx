@@ -133,7 +133,7 @@ function DropdownItem({
   if (anchor) {
     return (
       <a
-        href="/flowaccess-extension.zip"
+        href="/veoflowapi-extension.zip"
         download
         onClick={onClick}
         className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#1a1a1a] transition-colors"
