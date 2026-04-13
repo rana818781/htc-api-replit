@@ -106,6 +106,68 @@ router.get("/reseller/stats", async (req: AuthenticatedRequest, res): Promise<vo
   }
 });
 
+router.get("/reseller/users/:resellerId", async (req: AuthenticatedRequest, res): Promise<void> => {
+  try {
+    const currentUser = req.dbUser!;
+    const resellerId = parseInt(Array.isArray(req.params.resellerId) ? req.params.resellerId[0] : req.params.resellerId, 10);
+
+    if (isNaN(resellerId)) {
+      res.status(400).json({ error: "Invalid reseller ID" });
+      return;
+    }
+
+    if (!currentUser.isAdmin && currentUser.id !== resellerId) {
+      res.status(403).json({ error: "You can only view your own users" });
+      return;
+    }
+
+    const users = await db
+      .select({
+        id: usersTable.id,
+        username: usersTable.username,
+        email: usersTable.email,
+        isAdmin: usersTable.isAdmin,
+        isReseller: usersTable.isReseller,
+        addedBy: usersTable.addedBy,
+        planId: usersTable.planId,
+        planName: plansTable.name,
+        creditsTotal: usersTable.creditsTotal,
+        creditsUsed: usersTable.creditsUsed,
+        createdAt: usersTable.createdAt,
+      })
+      .from(usersTable)
+      .leftJoin(plansTable, eq(usersTable.planId, plansTable.id))
+      .where(eq(usersTable.addedBy, resellerId))
+      .orderBy(desc(usersTable.createdAt));
+
+    const dailyStats = await db
+      .select({
+        date: sql<string>`DATE(${usersTable.createdAt})`.as("date"),
+        count: count(),
+      })
+      .from(usersTable)
+      .where(eq(usersTable.addedBy, resellerId))
+      .groupBy(sql`DATE(${usersTable.createdAt})`)
+      .orderBy(desc(sql`DATE(${usersTable.createdAt})`))
+      .limit(30);
+
+    const [resellerInfo] = await db
+      .select({ id: usersTable.id, username: usersTable.username })
+      .from(usersTable)
+      .where(eq(usersTable.id, resellerId));
+
+    res.json({
+      reseller: resellerInfo || { id: resellerId, username: "Unknown" },
+      users,
+      dailyStats,
+      totalUsers: users.length,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch reseller detail");
+    res.status(500).json({ error: "Failed to fetch reseller detail" });
+  }
+});
+
 router.post("/reseller/users", async (req: AuthenticatedRequest, res): Promise<void> => {
   const currentUser = req.dbUser!;
   const { username, password, planId, creditsTotal } = req.body;
