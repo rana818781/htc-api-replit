@@ -20,9 +20,10 @@ function hideError() {
 }
 
 function setUserUI(user) {
-  const initials = (user.email || "?").slice(0, 2).toUpperCase();
+  const displayName = user.username || user.email || "?";
+  const initials = displayName.slice(0, 2).toUpperCase();
   document.getElementById("user-avatar").textContent = initials;
-  document.getElementById("user-name").textContent = user.email || "—";
+  document.getElementById("user-name").textContent = displayName;
   document.getElementById("user-plan").textContent = user.planName || "No plan";
   document.getElementById("credits-left").textContent = user.creditsRemaining ?? "—";
   document.getElementById("credits-total").textContent = user.creditsTotal ?? "—";

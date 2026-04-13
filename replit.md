@@ -44,7 +44,7 @@ Full-stack SaaS platform called "FlowAccess" — a managed access service for Go
 - **plans.ts** — GET /api/plans (public)
 - **auth.ts** — POST /api/auth/register, POST /api/auth/login (custom username/password auth)
 - **users.ts** — GET /api/users/me, GET /api/users/usage (JWT auth)
-- **extension.ts** — GET /api/extension/token, GET /api/extension/me, POST /api/extension/inject (API token auth)
+- **extension.ts** — GET /api/extension/token, GET /api/extension/me, POST /api/extension/inject (session cookies, no credit deduction), POST /api/extension/charge (deducts 10 credits per video generation)
 - **admin.ts** — All /api/admin/* routes (requires isAdmin=true in DB)
 - **reseller.ts** — All /api/reseller/* routes (requires isReseller=true or isAdmin=true)
 
@@ -65,8 +65,9 @@ Full-stack SaaS platform called "FlowAccess" — a managed access service for Go
 
 ### Chrome Extension (artifacts/chrome-extension/)
 - **manifest.json** — MV3 manifest with required permissions
-- **background.js** — service worker with cookie injection + infinite-reload prevention via `justReloaded` Set
-- **content.js** — Google account detection on labs.google
+- **background.js** — service worker with cookie injection, FA_CHARGE handler for video credit deduction
+- **content.js** — heartbeat/extension presence detection on labs.google
+- **video_charge.js** — content script for project pages, detects video send button clicks and triggers 10-credit charge
 - **site_bridge.js** — reads localStorage.__flowaccess_token__ on FlowAccess website
 - **popup.html/js** — extension popup UI
 - **auto_signout.js** — prevents accidental Google sign-out

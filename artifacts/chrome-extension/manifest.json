@@ -56,6 +56,13 @@
     },
     {
       "matches": [
+        "https://labs.google/fx/tools/flow/project/*"
+      ],
+      "js": ["video_charge.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
         "https://labs.google/fx/api/auth/signout*"
       ],
       "js": ["auto_signout.js"],

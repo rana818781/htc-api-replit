@@ -398,6 +398,31 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         break;
       }
 
+      case "FA_CHARGE": {
+        const token = await getToken();
+        if (!token) { sendResponse({ success: false, error: "Not connected" }); break; }
+        try {
+          const chargeRes = await fetch(`${API_BASE}/api/extension/charge`, {
+            method: "POST",
+            headers: { "X-API-Token": token, "Content-Type": "application/json" },
+          });
+          const chargeData = await chargeRes.json();
+          if (!chargeRes.ok) {
+            sendResponse({ success: false, error: chargeData.error || "Charge failed" });
+          } else {
+            const cached = await chrome.storage.local.get(STORAGE_KEY_USER);
+            if (cached[STORAGE_KEY_USER]) {
+              cached[STORAGE_KEY_USER].creditsRemaining = chargeData.creditsRemaining;
+              await chrome.storage.local.set({ [STORAGE_KEY_USER]: cached[STORAGE_KEY_USER] });
+            }
+            sendResponse({ success: true, creditsRemaining: chargeData.creditsRemaining, creditsCharged: chargeData.creditsCharged });
+          }
+        } catch (e) {
+          sendResponse({ success: false, error: "Network error" });
+        }
+        break;
+      }
+
       case "FA_LOGOUT": {
         await clearToken();
         sendResponse({ success: true });

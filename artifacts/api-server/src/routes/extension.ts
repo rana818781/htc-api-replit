@@ -81,20 +81,7 @@ router.post("/extension/inject", requireAuthOrApiToken, async (req: Authenticate
     return;
   }
 
-  const [updatedUser] = await db
-    .update(usersTable)
-    .set({ creditsUsed: sql`${usersTable.creditsUsed} + 1` })
-    .where(
-      sql`${usersTable.id} = ${user.id} AND ${usersTable.creditsUsed} < ${usersTable.creditsTotal}`,
-    )
-    .returning();
-
-  if (!updatedUser) {
-    res.status(403).json({ error: "No credits remaining" });
-    return;
-  }
-
-  const creditsRemaining = Math.max(0, updatedUser.creditsTotal - updatedUser.creditsUsed);
+  const creditsRemaining = Math.max(0, user.creditsTotal - user.creditsUsed);
 
   const [session] = await db
     .select()
@@ -104,10 +91,6 @@ router.post("/extension/inject", requireAuthOrApiToken, async (req: Authenticate
     .limit(1);
 
   if (!session) {
-    await db
-      .update(usersTable)
-      .set({ creditsUsed: sql`${usersTable.creditsUsed} - 1` })
-      .where(eq(usersTable.id, user.id));
     res.status(404).json({ error: "No active session available" });
     return;
   }
@@ -120,15 +103,40 @@ router.post("/extension/inject", requireAuthOrApiToken, async (req: Authenticate
     })
     .where(eq(sessionsTable.id, session.id));
 
+  res.json({
+    cookieData: session.cookieData,
+    creditsRemaining,
+  });
+});
+
+router.post("/extension/charge", requireApiToken, async (req: AuthenticatedRequest, res): Promise<void> => {
+  const user = req.dbUser!;
+
+  const [updatedUser] = await db
+    .update(usersTable)
+    .set({ creditsUsed: sql`${usersTable.creditsUsed} + 10` })
+    .where(
+      sql`${usersTable.id} = ${user.id} AND (${usersTable.creditsTotal} - ${usersTable.creditsUsed}) >= 10`,
+    )
+    .returning();
+
+  if (!updatedUser) {
+    res.status(403).json({ error: "Not enough credits (10 required)" });
+    return;
+  }
+
+  const creditsRemaining = Math.max(0, updatedUser.creditsTotal - updatedUser.creditsUsed);
+
   await db.insert(usageLogsTable).values({
     userId: user.id,
-    sessionId: session.id,
-    action: "inject",
-    creditsUsed: 1,
+    sessionId: null,
+    action: "video_generate",
+    creditsUsed: 10,
   });
 
   res.json({
-    cookieData: session.cookieData,
+    success: true,
+    creditsCharged: 10,
     creditsRemaining,
   });
 });
