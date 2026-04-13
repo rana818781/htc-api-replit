@@ -112,31 +112,40 @@ router.post("/extension/inject", requireAuthOrApiToken, async (req: Authenticate
 router.post("/extension/charge", requireApiToken, async (req: AuthenticatedRequest, res): Promise<void> => {
   const user = req.dbUser!;
 
+  const allowedCredits = [10, 20, 30, 40];
+  const credits = typeof req.body?.credits === "number" ? req.body.credits : 10;
+
+  if (!allowedCredits.includes(credits)) {
+    res.status(400).json({ error: "Invalid credit amount. Allowed: 10, 20, 30, 40" });
+    return;
+  }
+
   const [updatedUser] = await db
     .update(usersTable)
-    .set({ creditsUsed: sql`${usersTable.creditsUsed} + 10` })
+    .set({ creditsUsed: sql`${usersTable.creditsUsed} + ${credits}` })
     .where(
-      sql`${usersTable.id} = ${user.id} AND (${usersTable.creditsTotal} - ${usersTable.creditsUsed}) >= 10`,
+      sql`${usersTable.id} = ${user.id} AND (${usersTable.creditsTotal} - ${usersTable.creditsUsed}) >= ${credits}`,
     )
     .returning();
 
   if (!updatedUser) {
-    res.status(403).json({ error: "Not enough credits (10 required)" });
+    res.status(403).json({ error: `Not enough credits (${credits} required)` });
     return;
   }
 
   const creditsRemaining = Math.max(0, updatedUser.creditsTotal - updatedUser.creditsUsed);
+  const multiplier = credits / 10;
 
   await db.insert(usageLogsTable).values({
     userId: user.id,
     sessionId: null,
-    action: "video_generate",
-    creditsUsed: 10,
+    action: `video_generate_x${multiplier}`,
+    creditsUsed: credits,
   });
 
   res.json({
     success: true,
-    creditsCharged: 10,
+    creditsCharged: credits,
     creditsRemaining,
   });
 });

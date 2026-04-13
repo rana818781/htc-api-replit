@@ -401,10 +401,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "FA_CHARGE": {
         const token = await getToken();
         if (!token) { sendResponse({ success: false, error: "Not connected" }); break; }
+        const chargeCredits = msg.credits || 10;
         try {
           const chargeRes = await fetch(`${API_BASE}/api/extension/charge`, {
             method: "POST",
             headers: { "X-API-Token": token, "Content-Type": "application/json" },
+            body: JSON.stringify({ credits: chargeCredits }),
           });
           const chargeData = await chargeRes.json();
           if (!chargeRes.ok) {

@@ -56,7 +56,7 @@
     },
     {
       "matches": [
-        "https://labs.google/fx/tools/flow/project/*"
+        "https://labs.google/fx/tools/flow*"
       ],
       "js": ["video_charge.js"],
       "run_at": "document_idle"
