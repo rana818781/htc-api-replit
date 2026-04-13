@@ -6,7 +6,7 @@ import { requireAdmin, type AuthenticatedRequest } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.use(requireAdmin);
+router.use("/admin", requireAdmin);
 
 router.get("/admin/sessions/stats", async (req, res): Promise<void> => {
   const [[totalSessionsRow], [activeSessionsRow], [totalUsersRow], [totalUsageRow]] =

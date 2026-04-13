@@ -6,7 +6,7 @@ import { requireReseller, type AuthenticatedRequest } from "../middlewares/auth"
 
 const router: IRouter = Router();
 
-router.use(requireReseller);
+router.use("/reseller", requireReseller);
 
 router.get("/reseller/users", async (req: AuthenticatedRequest, res): Promise<void> => {
   try {
