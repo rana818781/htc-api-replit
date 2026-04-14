@@ -47,7 +47,7 @@ Full-stack SaaS platform called "Veo Flow API" — a managed access service for 
 - **users.ts** — GET /api/users/me, GET /api/users/usage (JWT auth)
 - **extension.ts** — GET /api/extension/token, GET /api/extension/me, POST /api/extension/inject (session cookies, no credit deduction), POST /api/extension/charge (deducts 10 credits per video generation), POST /api/sync/cookies (public, syncKey auth — auto cookie sync from Session Keeper extension)
 - **admin.ts** — All /api/admin/* routes (requires isAdmin=true in DB)
-- **reseller.ts** — All /api/reseller/* routes (requires isReseller=true or isAdmin=true)
+- **reseller.ts** — All /api/reseller/* routes (requires isReseller=true or isAdmin=true), includes PATCH /api/reseller/users/:id/password for reseller password changes
 
 ### Auth System
 - **Backend**: JWT Bearer tokens via `Authorization: Bearer <token>` header

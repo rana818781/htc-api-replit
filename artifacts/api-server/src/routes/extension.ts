@@ -10,6 +10,8 @@ async function checkAndExpireUser(userId: number) {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user || !user.planId) return user;
 
+  if (user.isAdmin || user.isReseller) return user;
+
   const creditsRemaining = Math.max(0, user.creditsTotal - user.creditsUsed);
   const isExpired = user.planExpiresAt && new Date(user.planExpiresAt) <= new Date();
   const isOutOfCredits = creditsRemaining < 10;

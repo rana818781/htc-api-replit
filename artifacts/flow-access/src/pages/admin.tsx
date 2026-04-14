@@ -76,6 +76,7 @@ const editUserSchema = z.object({
   creditsUsed: z.coerce.number().min(0).default(0),
   isAdmin: z.boolean().default(false),
   isReseller: z.boolean().default(false),
+  newPassword: z.string().optional().refine(val => !val || val.length >= 6, { message: "Password must be at least 6 characters" }),
 });
 
 export default function Admin() {
@@ -559,11 +560,15 @@ function UsersTab() {
 
   const onEditSubmit = (values: z.infer<typeof editUserSchema>) => {
     if (!editUserId) return;
-    const payload = {
-      ...values,
+    const { newPassword, ...rest } = values;
+    const payload: Record<string, unknown> = {
+      ...rest,
       planId: values.planId && values.planId !== "none" ? parseInt(values.planId) : null
     };
-    updateMutation.mutate({ id: editUserId, data: payload }, {
+    if (newPassword && newPassword.length >= 6) {
+      payload.newPassword = newPassword;
+    }
+    updateMutation.mutate({ id: editUserId, data: payload as any }, {
       onSuccess: () => {
         toast({ title: "Success", description: "User updated." });
         setEditUserId(null);
@@ -672,7 +677,8 @@ function UsersTab() {
                           creditsTotal: u.creditsTotal, 
                           creditsUsed: u.creditsUsed,
                           isAdmin: u.isAdmin,
-                          isReseller: u.isReseller 
+                          isReseller: u.isReseller,
+                          newPassword: "",
                         });
                         setEditUserId(u.id);
                       } else setEditUserId(null);
@@ -716,6 +722,12 @@ function UsersTab() {
                                 <FormItem><FormLabel>Used Credits</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
                               )} />
                             </div>
+                            <FormField control={editForm.control} name="newPassword" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>New Password</FormLabel>
+                                <FormControl><Input type="password" placeholder="Leave empty to keep current" {...field} /></FormControl>
+                              </FormItem>
+                            )} />
                             <Button type="submit" className="w-full" disabled={updateMutation.isPending}>Update</Button>
                           </form>
                         </Form>

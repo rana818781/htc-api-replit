@@ -231,4 +231,40 @@ router.post("/reseller/users", async (req: AuthenticatedRequest, res): Promise<v
   res.status(201).json({ ...safeUser, planName });
 });
 
+router.patch("/reseller/users/:id/password", async (req: AuthenticatedRequest, res): Promise<void> => {
+  const currentUser = req.dbUser!;
+  const userId = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+
+  if (isNaN(userId)) {
+    res.status(400).json({ error: "Invalid user ID" });
+    return;
+  }
+
+  const { newPassword } = req.body;
+  if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+    res.status(400).json({ error: "Password must be at least 6 characters" });
+    return;
+  }
+
+  const [targetUser] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!targetUser) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  if (!currentUser.isAdmin && targetUser.addedBy !== currentUser.id) {
+    res.status(403).json({ error: "You can only change passwords for your own users" });
+    return;
+  }
+
+  try {
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, userId));
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Failed to change password:", err);
+    res.status(500).json({ error: "Failed to change password" });
+  }
+});
+
 export default router;

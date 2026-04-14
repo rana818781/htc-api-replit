@@ -40,7 +40,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <aside
             className={`${
               isMobileMenuOpen ? "flex" : "hidden"
-            } md:flex flex-col w-full md:w-64 border-r border-border bg-sidebar shrink-0 p-4`}
+            } md:flex flex-col w-full md:w-64 md:h-[100dvh] md:sticky md:top-0 border-r border-border bg-sidebar shrink-0 p-4 overflow-y-auto`}
           >
             <div className="hidden md:block mb-8 px-2">
               <Link href="/dashboard">
@@ -127,7 +127,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto md:h-[100dvh]">
         {children}
       </main>
     </div>

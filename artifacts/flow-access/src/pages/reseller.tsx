@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Plus, Calendar, UserPlus, ArrowLeft, ChevronRight } from "lucide-react";
+import { Users, Plus, Calendar, UserPlus, ArrowLeft, ChevronRight, KeyRound } from "lucide-react";
 
 const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -214,6 +214,10 @@ export default function ResellerPanel() {
   const [newPassword, setNewPassword] = useState("");
   const [newPlanId, setNewPlanId] = useState<string>("");
   const [newCredits, setNewCredits] = useState("");
+
+  const [pwdUserId, setPwdUserId] = useState<number | null>(null);
+  const [pwdValue, setPwdValue] = useState("");
+  const [pwdLoading, setPwdLoading] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -492,6 +496,7 @@ export default function ResellerPanel() {
                   <TableHead>Role</TableHead>
                   {isAdmin && <TableHead>Added By</TableHead>}
                   <TableHead>Added On</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -550,12 +555,17 @@ export default function ResellerPanel() {
                         </TableCell>
                       )}
                       <TableCell>{format(new Date(u.createdAt), "dd MMM yyyy, HH:mm")}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Change Password" onClick={() => { setPwdUserId(u.id); setPwdValue(""); }}>
+                          <KeyRound className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
                 {users.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={isAdmin ? 7 : 6} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground py-8">
                       No users added yet. Click "Add User" to get started.
                     </TableCell>
                   </TableRow>
@@ -565,6 +575,49 @@ export default function ResellerPanel() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={pwdUserId !== null} onOpenChange={(open) => { if (!open) setPwdUserId(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">New Password</label>
+              <Input
+                type="password"
+                value={pwdValue}
+                onChange={(e) => setPwdValue(e.target.value)}
+                placeholder="Min 6 characters"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPwdUserId(null)}>Cancel</Button>
+            <Button
+              disabled={pwdLoading || pwdValue.length < 6}
+              onClick={async () => {
+                if (!pwdUserId) return;
+                setPwdLoading(true);
+                try {
+                  await apiFetch(`/reseller/users/${pwdUserId}/password`, {
+                    method: "PATCH",
+                    body: JSON.stringify({ newPassword: pwdValue }),
+                  });
+                  toast({ title: "Success", description: "Password changed successfully" });
+                  setPwdUserId(null);
+                } catch (err: unknown) {
+                  toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to change password", variant: "destructive" });
+                } finally {
+                  setPwdLoading(false);
+                }
+              }}
+            >
+              {pwdLoading ? "Changing..." : "Change Password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

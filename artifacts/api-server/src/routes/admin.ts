@@ -255,8 +255,15 @@ router.patch("/admin/users/:id", async (req: AuthenticatedRequest, res): Promise
     return;
   }
 
-  const { planId, creditsTotal, creditsUsed, isAdmin, isReseller } = req.body;
+  const { planId, creditsTotal, creditsUsed, isAdmin, isReseller, newPassword } = req.body;
   const updates: Record<string, unknown> = {};
+  if (newPassword !== undefined) {
+    if (typeof newPassword !== "string" || newPassword.length < 6) {
+      res.status(400).json({ error: "Password must be at least 6 characters" });
+      return;
+    }
+    updates.passwordHash = await bcrypt.hash(newPassword, 10);
+  }
   if (planId !== undefined) {
     updates.planId = planId;
     if (planId) {
