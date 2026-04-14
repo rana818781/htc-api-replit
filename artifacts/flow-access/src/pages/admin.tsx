@@ -36,7 +36,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Users, Key, Activity, Plus, Edit, Trash2, ExternalLink, RefreshCw, Copy, Clock, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { ShieldAlert, Users, Key, Activity, Plus, Edit, Trash2, ExternalLink, RefreshCw, Copy, Clock, AlertTriangle, CheckCircle, XCircle, Eye, EyeOff } from "lucide-react";
 import { Link } from "wouter";
 import { formatDistanceToNow, differenceInHours } from "date-fns";
 
@@ -532,6 +532,8 @@ function UsersTab() {
   
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editUserId, setEditUserId] = useState<number | null>(null);
+  const [showCreatePwd, setShowCreatePwd] = useState(false);
+  const [showEditPwd, setShowEditPwd] = useState(false);
 
   const createForm = useForm<z.infer<typeof userSchema>>({
     resolver: zodResolver(userSchema),
@@ -596,7 +598,14 @@ function UsersTab() {
                   <FormItem><FormLabel>Username</FormLabel><FormControl><Input type="text" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={createForm.control} name="password" render={({ field }) => (
-                  <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Password</FormLabel><FormControl>
+                    <div className="relative">
+                      <Input type={showCreatePwd ? "text" : "password"} className="pr-10" {...field} />
+                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowCreatePwd(!showCreatePwd)}>
+                        {showCreatePwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </FormControl><FormMessage /></FormItem>
                 )} />
                 <div className="grid grid-cols-2 gap-4">
                   <FormField control={createForm.control} name="planId" render={({ field }) => (
@@ -725,7 +734,14 @@ function UsersTab() {
                             <FormField control={editForm.control} name="newPassword" render={({ field }) => (
                               <FormItem>
                                 <FormLabel>New Password</FormLabel>
-                                <FormControl><Input type="password" placeholder="Leave empty to keep current" {...field} /></FormControl>
+                                <FormControl>
+                                  <div className="relative">
+                                    <Input type={showEditPwd ? "text" : "password"} placeholder="Leave empty to keep current" className="pr-10" {...field} />
+                                    <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowEditPwd(!showEditPwd)}>
+                                      {showEditPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                  </div>
+                                </FormControl>
                               </FormItem>
                             )} />
                             <Button type="submit" className="w-full" disabled={updateMutation.isPending}>Update</Button>

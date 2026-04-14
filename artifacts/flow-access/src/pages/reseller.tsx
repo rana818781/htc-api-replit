@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Plus, Calendar, UserPlus, ArrowLeft, ChevronRight, KeyRound } from "lucide-react";
+import { Users, Plus, Calendar, UserPlus, ArrowLeft, ChevronRight, KeyRound, Eye, EyeOff } from "lucide-react";
 
 const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -219,6 +219,9 @@ export default function ResellerPanel() {
   const [pwdValue, setPwdValue] = useState("");
   const [pwdLoading, setPwdLoading] = useState(false);
 
+  const [showAddPwd, setShowAddPwd] = useState(false);
+  const [showChangePwd, setShowChangePwd] = useState(false);
+
   const loadData = useCallback(async () => {
     try {
       const [usersData, statsData] = await Promise.all([
@@ -332,12 +335,18 @@ export default function ResellerPanel() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Password</label>
-                <Input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Min 6 characters"
-                />
+                <div className="relative">
+                  <Input
+                    type={showAddPwd ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Min 6 characters"
+                    className="pr-10"
+                  />
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowAddPwd(!showAddPwd)}>
+                    {showAddPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Plan</label>
@@ -588,12 +597,18 @@ export default function ResellerPanel() {
           <div className="space-y-4 py-4">
             <div>
               <label className="text-sm font-medium mb-1 block">New Password</label>
-              <Input
-                type="password"
-                value={pwdValue}
-                onChange={(e) => setPwdValue(e.target.value)}
-                placeholder="Min 6 characters"
-              />
+              <div className="relative">
+                <Input
+                  type={showChangePwd ? "text" : "password"}
+                  value={pwdValue}
+                  onChange={(e) => setPwdValue(e.target.value)}
+                  placeholder="Min 6 characters"
+                  className="pr-10"
+                />
+                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowChangePwd(!showChangePwd)}>
+                  {showChangePwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
           </div>
           <DialogFooter>
