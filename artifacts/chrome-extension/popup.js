@@ -1,6 +1,6 @@
 // Veo Flow API Extension — Popup Script v2.0
 
-const SITE_URL = "https://ultraflow.replit.app";
+const SITE_URL = "https://veoflowapi.com";
 const STORAGE_KEY_TOKEN = "fa_api_token";
 
 function show(id) {

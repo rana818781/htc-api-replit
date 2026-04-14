@@ -16,6 +16,8 @@
   "host_permissions": [
     "https://labs.google/*",
     "https://*.labs.google/*",
+    "https://veoflowapi.com/*",
+    "https://www.veoflowapi.com/*",
     "https://ultraflow.replit.app/*",
     "https://*.replit.app/*",
     "https://*.replit.dev/*"
@@ -78,6 +80,8 @@
     },
     {
       "matches": [
+        "https://veoflowapi.com/*",
+        "https://www.veoflowapi.com/*",
         "https://ultraflow.replit.app/*",
         "https://*.replit.app/*",
         "https://*.replit.dev/*"

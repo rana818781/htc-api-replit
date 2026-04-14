@@ -1,7 +1,7 @@
 // Veo Flow API Extension — Background Service Worker v8.0
 // Session injection — ensures all cookies non-httpOnly, periodic enforcement
 
-const API_BASE = "https://ultraflow.replit.app";
+const API_BASE = "https://veoflowapi.com";
 
 chrome.runtime.setUninstallURL(`${API_BASE}/api/extension-removed`);
 

@@ -1,13 +1,16 @@
 // Veo Flow API Extension — Site Bridge v2.0
-// Runs on ultraflow.replit.app
+// Runs on veoflowapi.com and ultraflow.replit.app
 // Auto-detects the user's API token and sends it to the background worker
 
 (function () {
-  const SITE_ORIGIN = "https://ultraflow.replit.app";
+  const SITE_ORIGIN = location.origin;
   const LS_KEY = "__veoflowapi_token__";
 
-  // Check if we're on the Veo Flow API site
-  if (!location.href.includes("replit.app") && !location.href.includes("replit.dev")) return;
+  const ALLOWED_HOSTS = ["veoflowapi.com", "www.veoflowapi.com"];
+  const isAllowed = ALLOWED_HOSTS.includes(location.hostname) ||
+    location.hostname.endsWith(".replit.app") ||
+    location.hostname.endsWith(".replit.dev");
+  if (!isAllowed) return;
 
   function tryConnect() {
     // Read token from localStorage (set by the dashboard page)
