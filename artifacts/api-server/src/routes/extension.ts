@@ -6,6 +6,31 @@ import { requireAuth, requireApiToken, type AuthenticatedRequest } from "../midd
 
 const router: IRouter = Router();
 
+async function checkAndExpireUser(userId: number) {
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user || !user.planId) return user;
+
+  const creditsRemaining = Math.max(0, user.creditsTotal - user.creditsUsed);
+  const isExpired = user.planExpiresAt && new Date(user.planExpiresAt) <= new Date();
+  const isOutOfCredits = creditsRemaining < 10;
+
+  if (isExpired || isOutOfCredits) {
+    const [updated] = await db
+      .update(usersTable)
+      .set({
+        planId: null,
+        creditsTotal: 0,
+        creditsUsed: 0,
+        subscriptionStartedAt: null,
+        planExpiresAt: null,
+      })
+      .where(eq(usersTable.id, userId))
+      .returning();
+    return updated;
+  }
+  return user;
+}
+
 router.get("/extension/token", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
   const userId = req.userId!;
 
@@ -28,20 +53,26 @@ router.get("/extension/token", requireAuth, async (req: AuthenticatedRequest, re
 router.get("/extension/me", requireApiToken, async (req: AuthenticatedRequest, res): Promise<void> => {
   const user = req.dbUser!;
 
+  const fullUser = await checkAndExpireUser(user.id);
+  if (!fullUser) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
   let planName: string | null = null;
-  if (user.planId) {
+  if (fullUser.planId) {
     const [plan] = await db
       .select()
       .from(plansTable)
-      .where(eq(plansTable.id, user.planId));
+      .where(eq(plansTable.id, fullUser.planId));
     planName = plan?.name ?? null;
   }
 
-  const fullUser = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, user.id))
-    .then((rows) => rows[0]);
+  let daysLeft: number | null = null;
+  if (fullUser.planExpiresAt) {
+    const msLeft = new Date(fullUser.planExpiresAt).getTime() - Date.now();
+    daysLeft = Math.max(0, Math.ceil(msLeft / (24 * 60 * 60 * 1000)));
+  }
 
   res.json({
     id: fullUser.id,
@@ -54,6 +85,8 @@ router.get("/extension/me", requireApiToken, async (req: AuthenticatedRequest, r
     creditsUsed: fullUser.creditsUsed,
     creditsRemaining: Math.max(0, fullUser.creditsTotal - fullUser.creditsUsed),
     subscriptionStartedAt: fullUser.subscriptionStartedAt,
+    planExpiresAt: fullUser.planExpiresAt,
+    daysLeft,
     createdAt: fullUser.createdAt,
   });
 });
@@ -71,13 +104,20 @@ async function requireAuthOrApiToken(
 }
 
 router.post("/extension/inject", requireAuthOrApiToken, async (req: AuthenticatedRequest, res): Promise<void> => {
-  let user = req.dbUser;
-  if (!user && req.userId) {
-    const [u] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId));
-    user = u;
+  let userId = req.dbUser?.id ?? req.userId;
+  if (!userId) {
+    res.status(401).json({ error: "User not found" });
+    return;
   }
+
+  const user = await checkAndExpireUser(userId);
   if (!user) {
     res.status(401).json({ error: "User not found" });
+    return;
+  }
+
+  if (!user.planId) {
+    res.status(403).json({ error: "No active plan. Please subscribe to continue." });
     return;
   }
 
@@ -110,7 +150,12 @@ router.post("/extension/inject", requireAuthOrApiToken, async (req: Authenticate
 });
 
 router.post("/extension/charge", requireApiToken, async (req: AuthenticatedRequest, res): Promise<void> => {
-  const user = req.dbUser!;
+  const checkedUser = await checkAndExpireUser(req.dbUser!.id);
+  if (!checkedUser || !checkedUser.planId) {
+    res.status(403).json({ error: "No active plan. Please subscribe to continue." });
+    return;
+  }
+  const user = checkedUser;
 
   const allowedCredits = [10, 20, 30, 40];
   const credits = typeof req.body?.credits === "number" ? req.body.credits : 10;

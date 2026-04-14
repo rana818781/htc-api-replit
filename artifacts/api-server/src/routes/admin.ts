@@ -176,6 +176,7 @@ router.get("/admin/users", async (req, res): Promise<void> => {
       creditsTotal: usersTable.creditsTotal,
       creditsUsed: usersTable.creditsUsed,
       subscriptionStartedAt: usersTable.subscriptionStartedAt,
+      planExpiresAt: usersTable.planExpiresAt,
       createdAt: usersTable.createdAt,
     })
     .from(usersTable)
@@ -212,6 +213,7 @@ router.post("/admin/users", async (req: AuthenticatedRequest, res): Promise<void
 
   let newUser;
   try {
+    const planExpiresAt = planId ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null;
     [newUser] = await db
       .insert(usersTable)
       .values({
@@ -222,6 +224,8 @@ router.post("/admin/users", async (req: AuthenticatedRequest, res): Promise<void
         isAdmin: isAdmin ?? false,
         isReseller: isReseller ?? false,
         addedBy: req.dbUser!.id,
+        subscriptionStartedAt: planId ? new Date() : null,
+        planExpiresAt,
       })
       .returning();
   } catch (dbErr: unknown) {
@@ -253,7 +257,16 @@ router.patch("/admin/users/:id", async (req: AuthenticatedRequest, res): Promise
 
   const { planId, creditsTotal, creditsUsed, isAdmin, isReseller } = req.body;
   const updates: Record<string, unknown> = {};
-  if (planId !== undefined) updates.planId = planId;
+  if (planId !== undefined) {
+    updates.planId = planId;
+    if (planId) {
+      updates.subscriptionStartedAt = new Date();
+      updates.planExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    } else {
+      updates.subscriptionStartedAt = null;
+      updates.planExpiresAt = null;
+    }
+  }
   if (creditsTotal !== undefined) updates.creditsTotal = creditsTotal;
   if (creditsUsed !== undefined) updates.creditsUsed = creditsUsed;
   if (isAdmin !== undefined) {

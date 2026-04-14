@@ -639,6 +639,7 @@ function UsersTab() {
                 <TableHead>Email</TableHead>
                 <TableHead>Plan</TableHead>
                 <TableHead>Credits (Used/Total)</TableHead>
+                <TableHead>Expires</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -649,6 +650,15 @@ function UsersTab() {
                   <TableCell className="font-medium">{u.username || u.email}</TableCell>
                   <TableCell>{u.planName || "N/A"}</TableCell>
                   <TableCell>{u.creditsUsed} / {u.creditsTotal}</TableCell>
+                  <TableCell>
+                    {(u as any).planExpiresAt ? (
+                      <span className={new Date((u as any).planExpiresAt) <= new Date() ? "text-red-500 text-xs" : "text-muted-foreground text-xs"}>
+                        {new Date((u as any).planExpiresAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="space-x-1">
                     {u.isAdmin && <Badge variant="default">Admin</Badge>}
                     {u.isReseller && <Badge className="bg-blue-600">Reseller</Badge>}

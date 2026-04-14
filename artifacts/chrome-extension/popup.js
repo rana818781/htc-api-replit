@@ -24,9 +24,27 @@ function setUserUI(user) {
   const initials = displayName.slice(0, 2).toUpperCase();
   document.getElementById("user-avatar").textContent = initials;
   document.getElementById("user-name").textContent = displayName;
-  document.getElementById("user-plan").textContent = user.planName || "No plan";
+  document.getElementById("user-plan").textContent = user.planName || "Free";
   document.getElementById("credits-left").textContent = user.creditsRemaining ?? "—";
   document.getElementById("credits-total").textContent = user.creditsTotal ?? "—";
+
+  const expiryRow = document.getElementById("expiry-row");
+  if (user.daysLeft !== null && user.daysLeft !== undefined && user.planExpiresAt) {
+    expiryRow.style.display = "grid";
+    const daysEl = document.getElementById("days-left");
+    daysEl.textContent = user.daysLeft;
+    if (user.daysLeft <= 3) {
+      daysEl.style.color = "#ef4444";
+    } else if (user.daysLeft <= 7) {
+      daysEl.style.color = "#f59e0b";
+    } else {
+      daysEl.style.color = "#22c55e";
+    }
+    const expDate = new Date(user.planExpiresAt);
+    document.getElementById("expires-date").textContent = expDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  } else {
+    expiryRow.style.display = "none";
+  }
 }
 
 async function checkFlowTab() {

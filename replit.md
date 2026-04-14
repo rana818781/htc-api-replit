@@ -35,7 +35,7 @@ Full-stack SaaS platform called "Veo Flow API" — a managed access service for 
 
 ### Database Tables (lib/db/src/schema/)
 - **plans** — subscription plans (Starter/Pro/Unlimited, seeded on startup)
-- **users** — user accounts with username/password_hash (unique username, bcrypt hashed passwords)
+- **users** — user accounts with username/password_hash (unique username, bcrypt hashed passwords, planExpiresAt for 1-month plan expiry)
 - **sessions** — Google account sessions (cookie pools managed by admin, with syncKey for auto cookie sync and cookieUpdatedAt for health monitoring)
 - **usage_logs** — records of each cookie injection
 - **api_tokens** — tokens for Chrome extension authentication

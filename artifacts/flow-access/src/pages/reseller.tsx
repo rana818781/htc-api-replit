@@ -48,6 +48,7 @@ interface ResellerUser {
   planName: string | null;
   creditsTotal: number;
   creditsUsed: number;
+  planExpiresAt: string | null;
   createdAt: string;
 }
 
@@ -487,6 +488,7 @@ export default function ResellerPanel() {
                   <TableHead>Username</TableHead>
                   <TableHead>Plan</TableHead>
                   <TableHead>Credits</TableHead>
+                  <TableHead>Expires</TableHead>
                   <TableHead>Role</TableHead>
                   {isAdmin && <TableHead>Added By</TableHead>}
                   <TableHead>Added On</TableHead>
@@ -510,6 +512,15 @@ export default function ResellerPanel() {
                       </TableCell>
                       <TableCell>
                         {u.creditsTotal - u.creditsUsed} / {u.creditsTotal}
+                      </TableCell>
+                      <TableCell>
+                        {u.planExpiresAt ? (
+                          <span className={new Date(u.planExpiresAt) <= new Date() ? "text-red-500" : "text-muted-foreground"}>
+                            {format(new Date(u.planExpiresAt), "dd MMM yyyy")}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {u.isAdmin ? (
@@ -544,7 +555,7 @@ export default function ResellerPanel() {
                 })}
                 {users.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={isAdmin ? 6 : 5} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={isAdmin ? 7 : 6} className="text-center text-muted-foreground py-8">
                       No users added yet. Click "Add User" to get started.
                     </TableCell>
                   </TableRow>

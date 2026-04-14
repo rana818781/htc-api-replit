@@ -28,6 +28,7 @@ router.get("/reseller/users", async (req: AuthenticatedRequest, res): Promise<vo
         planName: plansTable.name,
         creditsTotal: usersTable.creditsTotal,
         creditsUsed: usersTable.creditsUsed,
+        planExpiresAt: usersTable.planExpiresAt,
         createdAt: usersTable.createdAt,
       })
       .from(usersTable)
@@ -133,6 +134,7 @@ router.get("/reseller/users/:resellerId", async (req: AuthenticatedRequest, res)
         planName: plansTable.name,
         creditsTotal: usersTable.creditsTotal,
         creditsUsed: usersTable.creditsUsed,
+        planExpiresAt: usersTable.planExpiresAt,
         createdAt: usersTable.createdAt,
       })
       .from(usersTable)
@@ -196,6 +198,7 @@ router.post("/reseller/users", async (req: AuthenticatedRequest, res): Promise<v
 
   let newUser;
   try {
+    const planExpiresAt = planId ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null;
     [newUser] = await db
       .insert(usersTable)
       .values({
@@ -206,6 +209,8 @@ router.post("/reseller/users", async (req: AuthenticatedRequest, res): Promise<v
         isAdmin: false,
         isReseller: false,
         addedBy: currentUser.id,
+        subscriptionStartedAt: planId ? new Date() : null,
+        planExpiresAt,
       })
       .returning();
   } catch (dbErr: unknown) {

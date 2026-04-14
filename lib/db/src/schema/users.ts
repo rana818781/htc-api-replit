@@ -16,6 +16,7 @@ export const usersTable = pgTable("users", {
   creditsTotal: integer("credits_total").notNull().default(0),
   creditsUsed: integer("credits_used").notNull().default(0),
   subscriptionStartedAt: timestamp("subscription_started_at", { withTimezone: true }),
+  planExpiresAt: timestamp("plan_expires_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
