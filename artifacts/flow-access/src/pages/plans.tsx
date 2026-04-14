@@ -130,7 +130,7 @@ export default function Plans() {
                   {plan.tier}
                 </span>
                 <h2 className="text-2xl font-bold mt-1">{plan.name}</h2>
-                <p className="text-sm text-muted-foreground mt-0.5">Contact Your Reseller</p>
+                <p className="text-sm text-muted-foreground mt-0.5">1 Month · Contact Your Reseller</p>
               </div>
 
               <div className="rounded-xl border border-border/60 bg-muted/30 p-4 flex items-center justify-around mb-6">

@@ -28,21 +28,27 @@ function setUserUI(user) {
   document.getElementById("credits-left").textContent = user.creditsRemaining ?? "—";
   document.getElementById("credits-total").textContent = user.creditsTotal ?? "—";
 
+  const daysLeftText = document.getElementById("days-left-text");
   const expiryRow = document.getElementById("expiry-row");
   if (user.daysLeft !== null && user.daysLeft !== undefined && user.planExpiresAt) {
+    daysLeftText.style.display = "block";
+    daysLeftText.textContent = user.daysLeft + " days left";
+    if (user.daysLeft <= 3) {
+      daysLeftText.style.color = "#ef4444";
+    } else if (user.daysLeft <= 7) {
+      daysLeftText.style.color = "#f59e0b";
+    } else {
+      daysLeftText.style.color = "#22c55e";
+    }
+
     expiryRow.style.display = "grid";
     const daysEl = document.getElementById("days-left");
     daysEl.textContent = user.daysLeft;
-    if (user.daysLeft <= 3) {
-      daysEl.style.color = "#ef4444";
-    } else if (user.daysLeft <= 7) {
-      daysEl.style.color = "#f59e0b";
-    } else {
-      daysEl.style.color = "#22c55e";
-    }
+    daysEl.style.color = daysLeftText.style.color;
     const expDate = new Date(user.planExpiresAt);
     document.getElementById("expires-date").textContent = expDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   } else {
+    daysLeftText.style.display = "none";
     expiryRow.style.display = "none";
   }
 }
