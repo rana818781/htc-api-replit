@@ -10,6 +10,7 @@ import {
   useListAdminSessions,
   useUpdateAdminSession,
   useDeleteAdminSession,
+  useGenerateSessionSyncKey,
   useListAdminUsers,
   useCreateAdminUser,
   useUpdateAdminUser,
@@ -35,8 +36,9 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Users, Key, Activity, Plus, Edit, Trash2, ExternalLink } from "lucide-react";
+import { ShieldAlert, Users, Key, Activity, Plus, Edit, Trash2, ExternalLink, RefreshCw, Copy, Clock, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import { Link } from "wouter";
+import { formatDistanceToNow, differenceInHours } from "date-fns";
 
 const sessionSchema = z.object({
   label: z.string().min(1, "Label is required"),
@@ -248,14 +250,26 @@ function SessionForm({ form, onSubmit, isPending, submitLabel }: {
   );
 }
 
+function getHealthStatus(session: { cookieUpdatedAt?: string | null; createdAt: string; isActive: boolean }) {
+  if (!session.isActive) return { label: "Inactive", color: "text-gray-400", icon: XCircle, bg: "bg-gray-500/10" };
+  const updatedAt = session.cookieUpdatedAt || session.createdAt;
+  const hours = differenceInHours(new Date(), new Date(updatedAt));
+  if (hours < 12) return { label: "Fresh", color: "text-green-400", icon: CheckCircle, bg: "bg-green-500/10" };
+  if (hours < 48) return { label: "Good", color: "text-blue-400", icon: CheckCircle, bg: "bg-blue-500/10" };
+  if (hours < 168) return { label: "Aging", color: "text-yellow-400", icon: AlertTriangle, bg: "bg-yellow-500/10" };
+  return { label: "Stale", color: "text-red-400", icon: XCircle, bg: "bg-red-500/10" };
+}
+
 function SessionsTab() {
   const { data: sessions, isLoading } = useListAdminSessions();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const updateMutation = useUpdateAdminSession();
   const deleteMutation = useDeleteAdminSession();
+  const syncKeyMutation = useGenerateSessionSyncKey();
   
   const [editSessionId, setEditSessionId] = useState<number | null>(null);
+  const [syncDialogSessionId, setSyncDialogSessionId] = useState<number | null>(null);
 
   const editForm = useForm<z.infer<typeof sessionSchema>>({
     resolver: zodResolver(sessionSchema),
@@ -295,119 +309,213 @@ function SessionsTab() {
     });
   };
 
+  const handleGenerateSyncKey = (sessionId: number) => {
+    syncKeyMutation.mutate({ id: sessionId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListAdminSessionsQueryKey() });
+        toast({ title: "Sync Key Generated" });
+      },
+      onError: () => toast({ title: "Error", description: "Failed to generate sync key.", variant: "destructive" }),
+    });
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied to clipboard" });
+  };
+
+  const syncSession = sessions?.find(s => s.id === syncDialogSessionId);
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Google Session Management</CardTitle>
-          <CardDescription>
-            Add labs.google session cookies so users can access Google Flow AI. Export cookies using <strong>EditThisCookie</strong> or <strong>Cookie-Editor</strong>.
-          </CardDescription>
-        </div>
-        <Link href="/admin/sessions/new">
-          <Button size="sm" data-testid="btn-new-session">
-            <Plus className="h-4 w-4 mr-2" /> Add Session
-          </Button>
-        </Link>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? <Skeleton className="h-[300px] w-full" /> : (
-          <>
-            {(!sessions || sessions.length === 0) && (
-              <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground gap-3">
-                <Key className="h-12 w-12 opacity-20" />
-                <p className="text-sm">No sessions yet. Add a Google session to get started.</p>
-              </div>
-            )}
-            {sessions && sessions.length > 0 && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Label / Account</TableHead>
-                    <TableHead>Cookies</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Usage</TableHead>
-                    <TableHead>Last Used</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Session Health Monitor</CardTitle>
+            <CardDescription>
+              Overview of all Google session cookies — health, age, and auto-sync status.
+            </CardDescription>
+          </div>
+          <Link href="/admin/sessions/new">
+            <Button size="sm" data-testid="btn-new-session">
+              <Plus className="h-4 w-4 mr-2" /> Add Session
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? <Skeleton className="h-[300px] w-full" /> : (
+            <>
+              {(!sessions || sessions.length === 0) && (
+                <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground gap-3">
+                  <Key className="h-12 w-12 opacity-20" />
+                  <p className="text-sm">No sessions yet. Add a Google session to get started.</p>
+                </div>
+              )}
+              {sessions && sessions.length > 0 && (
+                <div className="space-y-3">
                   {sessions.map(session => {
                     const email = extractEmailFromCookies(session.cookieData);
                     const count = parseCookieCount(session.cookieData);
-                    return (
-                      <TableRow key={session.id}>
-                        <TableCell>
-                          <div className="font-medium">{session.label}</div>
-                          {email && <div className="text-xs text-muted-foreground mt-0.5">{email}</div>}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-mono text-xs">{count}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <button
-                            onClick={() => handleToggleActive(session)}
-                            className="cursor-pointer"
-                            title={session.isActive ? "Click to deactivate" : "Click to activate"}
-                          >
-                            <Badge variant={session.isActive ? "default" : "secondary"}>
-                              {session.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                          </button>
-                        </TableCell>
-                        <TableCell className="text-sm">{session.usageCount}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {session.lastUsedAt ? format(new Date(session.lastUsedAt), "dd MMM, h:mm a") : "Never"}
-                        </TableCell>
-                        <TableCell className="text-right space-x-1">
-                          <Dialog open={editSessionId === session.id} onOpenChange={(open) => {
-                            if (open) {
-                              editForm.reset({ label: session.label, cookieData: session.cookieData, isActive: session.isActive });
-                              setEditSessionId(session.id);
-                            } else {
-                              setEditSessionId(null);
-                            }
-                          }}>
-                            <DialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-xl">
-                              <DialogHeader>
-                                <DialogTitle>Edit Session</DialogTitle>
-                                <DialogDescription>Update cookie data or label for this session.</DialogDescription>
-                              </DialogHeader>
-                              <SessionForm form={editForm} onSubmit={onEditSubmit} isPending={updateMutation.isPending} submitLabel="Update Session" />
-                            </DialogContent>
-                          </Dialog>
+                    const health = getHealthStatus(session);
+                    const HealthIcon = health.icon;
+                    const cookieAge = session.cookieUpdatedAt
+                      ? formatDistanceToNow(new Date(session.cookieUpdatedAt), { addSuffix: true })
+                      : formatDistanceToNow(new Date(session.createdAt), { addSuffix: true });
 
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete "{session.label}"?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This session will be permanently removed. Users assigned to it will lose access until a new session is available.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(session.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </TableCell>
-                      </TableRow>
+                    return (
+                      <div key={session.id} className={`rounded-xl border p-4 ${health.bg} border-border`}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            <div className={`mt-0.5 ${health.color}`}>
+                              <HealthIcon className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-sm">{session.label}</span>
+                                <Badge variant={session.isActive ? "default" : "secondary"} className="text-xs cursor-pointer" onClick={() => handleToggleActive(session)}>
+                                  {session.isActive ? "Active" : "Inactive"}
+                                </Badge>
+                                <Badge variant="outline" className={`text-xs ${health.color}`}>{health.label}</Badge>
+                                {session.syncKey && (
+                                  <Badge variant="outline" className="text-xs text-blue-400 border-blue-400/30">
+                                    <RefreshCw className="h-3 w-3 mr-1" /> Auto-Sync
+                                  </Badge>
+                                )}
+                              </div>
+                              {email && <p className="text-xs text-muted-foreground mt-0.5">{email}</p>}
+                              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" /> Cookie: {cookieAge}
+                                </span>
+                                <span>{count} cookies</span>
+                                <span>{session.usageCount} uses</span>
+                                <span>
+                                  Last used: {session.lastUsedAt ? format(new Date(session.lastUsedAt), "dd MMM, h:mm a") : "Never"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Auto-Sync Setup" onClick={() => setSyncDialogSessionId(session.id)}>
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                            <Dialog open={editSessionId === session.id} onOpenChange={(open) => {
+                              if (open) {
+                                editForm.reset({ label: session.label, cookieData: session.cookieData, isActive: session.isActive });
+                                setEditSessionId(session.id);
+                              } else {
+                                setEditSessionId(null);
+                              }
+                            }}>
+                              <DialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-xl">
+                                <DialogHeader>
+                                  <DialogTitle>Edit Session</DialogTitle>
+                                  <DialogDescription>Update cookie data or label for this session.</DialogDescription>
+                                </DialogHeader>
+                                <SessionForm form={editForm} onSubmit={onEditSubmit} isPending={updateMutation.isPending} submitLabel="Update Session" />
+                              </DialogContent>
+                            </Dialog>
+
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete "{session.label}"?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This session will be permanently removed. Users assigned to it will lose access until a new session is available.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(session.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
-                </TableBody>
-              </Table>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={syncDialogSessionId !== null} onOpenChange={(open) => { if (!open) setSyncDialogSessionId(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Auto Cookie Sync Setup</DialogTitle>
+            <DialogDescription>
+              Install the "Session Keeper" extension on your session account's browser. It will automatically send fresh cookies to this session.
+            </DialogDescription>
+          </DialogHeader>
+          {syncSession && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium mb-1">Session: {syncSession.label}</p>
+                {syncSession.cookieUpdatedAt && (
+                  <p className="text-xs text-muted-foreground">
+                    Last cookie update: {formatDistanceToNow(new Date(syncSession.cookieUpdatedAt), { addSuffix: true })}
+                  </p>
+                )}
+              </div>
+
+              {syncSession.syncKey ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium">Sync Key</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input value={syncSession.syncKey} readOnly className="font-mono text-xs" />
+                      <Button variant="outline" size="icon" onClick={() => copyToClipboard(syncSession.syncKey!)}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">API URL</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input value={`${window.location.origin}/api/sync/cookies`} readOnly className="font-mono text-xs" />
+                      <Button variant="outline" size="icon" onClick={() => copyToClipboard(`${window.location.origin}/api/sync/cookies`)}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-border bg-muted/50 p-3">
+                    <p className="text-sm font-medium mb-2">Setup Steps:</p>
+                    <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
+                      <li><a href="/session-keeper-extension.zip" download className="text-primary underline font-medium">Download the Session Keeper extension</a></li>
+                      <li>Unzip and install it on the browser where your session account is logged into Google Flow</li>
+                      <li>Open the Session Keeper popup and paste the <strong>Sync Key</strong> and <strong>API URL</strong> above</li>
+                      <li>It will automatically sync cookies every 30 minutes</li>
+                    </ol>
+                  </div>
+                  <Button variant="outline" className="w-full" onClick={() => handleGenerateSyncKey(syncSession.id)}>
+                    <RefreshCw className="h-4 w-4 mr-2" /> Regenerate Sync Key
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Generate a sync key to enable auto cookie sync for this session.
+                  </p>
+                  <Button onClick={() => handleGenerateSyncKey(syncSession.id)} disabled={syncKeyMutation.isPending}>
+                    <Key className="h-4 w-4 mr-2" /> Generate Sync Key
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 

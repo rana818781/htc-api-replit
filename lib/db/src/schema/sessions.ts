@@ -9,9 +9,11 @@ export const sessionsTable = pgTable("sessions", {
   isActive: boolean("is_active").notNull().default(true),
   lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
   usageCount: integer("usage_count").notNull().default(0),
+  syncKey: varchar("sync_key", { length: 64 }),
+  cookieUpdatedAt: timestamp("cookie_updated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const insertSessionSchema = createInsertSchema(sessionsTable).omit({ id: true, createdAt: true, usageCount: true });
+export const insertSessionSchema = createInsertSchema(sessionsTable).omit({ id: true, createdAt: true, usageCount: true, syncKey: true, cookieUpdatedAt: true });
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type Session = typeof sessionsTable.$inferSelect;

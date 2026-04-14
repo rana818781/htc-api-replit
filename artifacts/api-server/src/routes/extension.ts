@@ -150,6 +150,41 @@ router.post("/extension/charge", requireApiToken, async (req: AuthenticatedReque
   });
 });
 
+router.post("/sync/cookies", async (req, res): Promise<void> => {
+  const { syncKey, cookieData } = req.body;
+
+  if (!syncKey || !cookieData) {
+    res.status(400).json({ error: "syncKey and cookieData are required" });
+    return;
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(cookieData);
+    if (!Array.isArray(parsed) || parsed.length === 0) throw new Error();
+  } catch {
+    res.status(400).json({ error: "cookieData must be a valid non-empty JSON array" });
+    return;
+  }
+
+  const [session] = await db
+    .select()
+    .from(sessionsTable)
+    .where(eq(sessionsTable.syncKey, syncKey));
+
+  if (!session) {
+    res.status(404).json({ error: "Invalid sync key" });
+    return;
+  }
+
+  await db
+    .update(sessionsTable)
+    .set({ cookieData, cookieUpdatedAt: new Date() })
+    .where(eq(sessionsTable.id, session.id));
+
+  res.json({ success: true, sessionId: session.id, label: session.label, cookieCount: parsed.length });
+});
+
 router.get("/extension-removed", (_req, res): void => {
   res.setHeader("Content-Type", "text/html");
   res.send(`<!DOCTYPE html>

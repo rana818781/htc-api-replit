@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, count } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 import { db, usersTable, plansTable, sessionsTable, usageLogsTable } from "@workspace/db";
 import { requireAdmin, type AuthenticatedRequest } from "../middlewares/auth";
 
@@ -47,6 +48,7 @@ router.post("/admin/sessions", async (req, res): Promise<void> => {
       label,
       cookieData,
       isActive: isActive !== undefined ? isActive : true,
+      cookieUpdatedAt: new Date(),
     })
     .returning();
 
@@ -64,7 +66,10 @@ router.patch("/admin/sessions/:id", async (req, res): Promise<void> => {
   const { label, cookieData, isActive } = req.body;
   const updates: Record<string, unknown> = {};
   if (label !== undefined) updates.label = label;
-  if (cookieData !== undefined) updates.cookieData = cookieData;
+  if (cookieData !== undefined) {
+    updates.cookieData = cookieData;
+    updates.cookieUpdatedAt = new Date();
+  }
   if (isActive !== undefined) updates.isActive = isActive;
 
   const [session] = await db
@@ -102,6 +107,29 @@ router.delete("/admin/sessions/:id", async (req, res): Promise<void> => {
   }
 
   res.sendStatus(204);
+});
+
+router.post("/admin/sessions/:id/generate-sync-key", async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid session ID" });
+    return;
+  }
+
+  const syncKey = randomBytes(16).toString("hex");
+  const [session] = await db
+    .update(sessionsTable)
+    .set({ syncKey })
+    .where(eq(sessionsTable.id, id))
+    .returning();
+
+  if (!session) {
+    res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  res.json({ syncKey: session.syncKey });
 });
 
 router.patch("/admin/plans/:id", async (req, res): Promise<void> => {

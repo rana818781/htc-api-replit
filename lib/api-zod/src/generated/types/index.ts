@@ -14,6 +14,7 @@ export * from "./apiTokenResponse";
 export * from "./createSessionBody";
 export * from "./createUserBody";
 export * from "./errorResponse";
+export * from "./generateSessionSyncKey200";
 export * from "./healthStatus";
 export * from "./injectResponse";
 export * from "./plan";

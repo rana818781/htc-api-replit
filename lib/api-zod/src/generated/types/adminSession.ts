@@ -14,5 +14,9 @@ export interface AdminSession {
   /** @nullable */
   lastUsedAt?: Date | null;
   usageCount: number;
+  /** @nullable */
+  syncKey?: string | null;
+  /** @nullable */
+  cookieUpdatedAt?: Date | null;
   createdAt: Date;
 }

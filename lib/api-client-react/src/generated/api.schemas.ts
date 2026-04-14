@@ -26,11 +26,8 @@ export interface Plan {
 
 export interface UserProfile {
   id: number;
-  username: string;
-  /** @nullable */
-  clerkUserId?: string | null;
-  /** @nullable */
-  email?: string | null;
+  clerkUserId: string;
+  email: string;
   isAdmin: boolean;
   /** @nullable */
   planId?: number | null;
@@ -68,6 +65,10 @@ export interface AdminSession {
   /** @nullable */
   lastUsedAt?: string | null;
   usageCount: number;
+  /** @nullable */
+  syncKey?: string | null;
+  /** @nullable */
+  cookieUpdatedAt?: string | null;
   createdAt: string;
 }
 
@@ -85,11 +86,8 @@ export interface UpdateSessionBody {
 
 export interface AdminUser {
   id: number;
-  username: string;
-  /** @nullable */
-  clerkUserId?: string | null;
-  /** @nullable */
-  email?: string | null;
+  clerkUserId: string;
+  email: string;
   isAdmin: boolean;
   /** @nullable */
   planId?: number | null;
@@ -103,7 +101,7 @@ export interface AdminUser {
 }
 
 export interface CreateUserBody {
-  username: string;
+  email: string;
   password: string;
   /** @nullable */
   planId?: number | null;
@@ -138,3 +136,7 @@ export interface UsageLogEntry {
   creditsUsed: number;
   createdAt: string;
 }
+
+export type GenerateSessionSyncKey200 = {
+  syncKey: string;
+};

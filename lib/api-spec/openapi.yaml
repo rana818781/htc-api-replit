@@ -246,6 +246,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /admin/sessions/{id}/generate-sync-key:
+    post:
+      operationId: generateSessionSyncKey
+      tags: [admin]
+      summary: Generate a sync key for a session
+      description: Generates a unique sync key for auto cookie sync (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Generated sync key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  syncKey:
+                    type: string
+                required:
+                  - syncKey
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /admin/sessions/{id}:
     patch:
       operationId: updateAdminSession
@@ -645,6 +682,11 @@ components:
           format: date-time
         usageCount:
           type: integer
+        syncKey:
+          type: ["string", "null"]
+        cookieUpdatedAt:
+          type: ["string", "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time

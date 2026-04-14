@@ -45,6 +45,12 @@ export const GetExtensionTokenResponse = zod.object({
  * Verifies an API token (X-API-Token header) and returns user info
  * @summary Get user info via API token
  */
+export const GetExtensionUserHeader = zod.object({
+  "X-API-Token": zod
+    .string()
+    .describe("API token issued via GET \/extension\/token"),
+});
+
 export const GetExtensionUserResponse = zod.object({
   id: zod.number(),
   clerkUserId: zod.string(),
@@ -63,6 +69,12 @@ export const GetExtensionUserResponse = zod.object({
  * Verifies API token, picks least-recently-used active session, deducts 1 credit, logs usage, returns cookie data
  * @summary Inject a Google session
  */
+export const InjectSessionHeader = zod.object({
+  "X-API-Token": zod
+    .string()
+    .describe("API token issued via GET \/extension\/token"),
+});
+
 export const InjectSessionResponse = zod.object({
   cookieData: zod.string(),
   creditsRemaining: zod.number(),
@@ -105,6 +117,8 @@ export const ListAdminSessionsResponseItem = zod.object({
   isActive: zod.boolean(),
   lastUsedAt: zod.coerce.date().nullish(),
   usageCount: zod.number(),
+  syncKey: zod.string().nullish(),
+  cookieUpdatedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const ListAdminSessionsResponse = zod.array(
@@ -119,6 +133,18 @@ export const CreateAdminSessionBody = zod.object({
   label: zod.string(),
   cookieData: zod.string(),
   isActive: zod.boolean().optional(),
+});
+
+/**
+ * Generates a unique sync key for auto cookie sync (admin only)
+ * @summary Generate a sync key for a session
+ */
+export const GenerateSessionSyncKeyParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GenerateSessionSyncKeyResponse = zod.object({
+  syncKey: zod.string(),
 });
 
 /**
@@ -142,6 +168,8 @@ export const UpdateAdminSessionResponse = zod.object({
   isActive: zod.boolean(),
   lastUsedAt: zod.coerce.date().nullish(),
   usageCount: zod.number(),
+  syncKey: zod.string().nullish(),
+  cookieUpdatedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
 });
 

@@ -25,6 +25,7 @@ import type {
   CreateSessionBody,
   CreateUserBody,
   ErrorResponse,
+  GenerateSessionSyncKey200,
   HealthStatus,
   InjectResponse,
   Plan,
@@ -732,6 +733,94 @@ export const useCreateAdminSession = <
   TContext
 > => {
   return useMutation(getCreateAdminSessionMutationOptions(options));
+};
+
+/**
+ * Generates a unique sync key for auto cookie sync (admin only)
+ * @summary Generate a sync key for a session
+ */
+export const getGenerateSessionSyncKeyUrl = (id: number) => {
+  return `/api/admin/sessions/${id}/generate-sync-key`;
+};
+
+export const generateSessionSyncKey = async (
+  id: number,
+  options?: RequestInit,
+): Promise<GenerateSessionSyncKey200> => {
+  return customFetch<GenerateSessionSyncKey200>(
+    getGenerateSessionSyncKeyUrl(id),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getGenerateSessionSyncKeyMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateSessionSyncKey>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateSessionSyncKey>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["generateSessionSyncKey"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateSessionSyncKey>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return generateSessionSyncKey(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateSessionSyncKeyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateSessionSyncKey>>
+>;
+
+export type GenerateSessionSyncKeyMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Generate a sync key for a session
+ */
+export const useGenerateSessionSyncKey = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateSessionSyncKey>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateSessionSyncKey>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getGenerateSessionSyncKeyMutationOptions(options));
 };
 
 /**

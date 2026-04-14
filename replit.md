@@ -31,11 +31,12 @@ Full-stack SaaS platform called "Veo Flow API" — a managed access service for 
 - **api-server** (`/api`) — Express backend serving all REST API routes
 - **flow-access** (`/`) — React + Vite frontend with animated mosaic hero homepage
 - **chrome-extension** (`artifacts/chrome-extension/`) — Chrome MV3 extension "Veo Flow API", packaged as `artifacts/flow-access/public/veoflowapi-extension.zip`
+- **session-keeper** (`artifacts/session-keeper/`) — Chrome MV3 companion extension for auto-syncing Google session cookies, packaged as `artifacts/flow-access/public/session-keeper-extension.zip`
 
 ### Database Tables (lib/db/src/schema/)
 - **plans** — subscription plans (Starter/Pro/Unlimited, seeded on startup)
 - **users** — user accounts with username/password_hash (unique username, bcrypt hashed passwords)
-- **sessions** — Google account sessions (cookie pools managed by admin)
+- **sessions** — Google account sessions (cookie pools managed by admin, with syncKey for auto cookie sync and cookieUpdatedAt for health monitoring)
 - **usage_logs** — records of each cookie injection
 - **api_tokens** — tokens for Chrome extension authentication
 
@@ -44,7 +45,7 @@ Full-stack SaaS platform called "Veo Flow API" — a managed access service for 
 - **plans.ts** — GET /api/plans (public)
 - **auth.ts** — POST /api/auth/register, POST /api/auth/login (custom username/password auth)
 - **users.ts** — GET /api/users/me, GET /api/users/usage (JWT auth)
-- **extension.ts** — GET /api/extension/token, GET /api/extension/me, POST /api/extension/inject (session cookies, no credit deduction), POST /api/extension/charge (deducts 10 credits per video generation)
+- **extension.ts** — GET /api/extension/token, GET /api/extension/me, POST /api/extension/inject (session cookies, no credit deduction), POST /api/extension/charge (deducts 10 credits per video generation), POST /api/sync/cookies (public, syncKey auth — auto cookie sync from Session Keeper extension)
 - **admin.ts** — All /api/admin/* routes (requires isAdmin=true in DB)
 - **reseller.ts** — All /api/reseller/* routes (requires isReseller=true or isAdmin=true)
 

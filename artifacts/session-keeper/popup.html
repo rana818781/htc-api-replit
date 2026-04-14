@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Veo Session Keeper</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      width: 340px;
+      padding: 16px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #21262d;
+    }
+    .header .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #5a3398;
+    }
+    .header .title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f0f0f0;
+    }
+    .header .ver {
+      font-size: 10px;
+      color: #484f58;
+      margin-left: auto;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #8b949e;
+      margin-bottom: 4px;
+      margin-top: 12px;
+    }
+    label:first-of-type { margin-top: 0; }
+    input {
+      width: 100%;
+      padding: 8px 10px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      color: #e6edf3;
+      font-size: 12px;
+      font-family: 'SF Mono', monospace;
+      outline: none;
+    }
+    input:focus { border-color: #5a3398; }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 14px;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary {
+      background: linear-gradient(135deg, #5a3398, #5547fd);
+      color: #fff;
+    }
+    .btn-secondary {
+      background: #21262d;
+      color: #e6edf3;
+      margin-top: 8px;
+    }
+    .status-box {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      border: 1px solid #30363d;
+      background: #161b22;
+    }
+    .status-box .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 0;
+    }
+    .status-box .label { color: #8b949e; }
+    .status-box .value { font-weight: 600; }
+    .status-box .value.success { color: #3fb950; }
+    .status-box .value.error { color: #f85149; }
+    .status-box .value.warning { color: #d29922; }
+    .status-box .value.idle { color: #484f58; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="dot"></span>
+    <span class="title">Veo Session Keeper</span>
+    <span class="ver">v1.0</span>
+  </div>
+
+  <label>API URL</label>
+  <input type="text" id="apiUrl" placeholder="https://ultraflow.replit.app/api/sync/cookies" />
+
+  <label>Sync Key</label>
+  <input type="text" id="syncKey" placeholder="Paste your sync key here..." />
+
+  <button class="btn btn-primary" id="saveBtn">Save & Sync Now</button>
+  <button class="btn btn-secondary" id="syncBtn">Sync Now</button>
+
+  <div class="status-box" id="statusBox">
+    <div class="row">
+      <span class="label">Status</span>
+      <span class="value idle" id="statusText">Not configured</span>
+    </div>
+    <div class="row">
+      <span class="label">Last Sync</span>
+      <span class="value" id="lastSyncTime">Never</span>
+    </div>
+    <div class="row">
+      <span class="label">Message</span>
+      <span class="value" id="lastSyncMsg">—</span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
