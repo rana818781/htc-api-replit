@@ -356,12 +356,16 @@ export default function ResellerPanel() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Credits</label>
-                <Input
-                  type="number"
-                  value={newCredits}
-                  onChange={(e) => setNewCredits(e.target.value)}
-                  placeholder="Total credits"
-                />
+                <Select value={newCredits} onValueChange={setNewCredits}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select credits" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25000">25,000</SelectItem>
+                    <SelectItem value="45000">45,000</SelectItem>
+                    <SelectItem value="999999">∞ Unlimited</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter>
