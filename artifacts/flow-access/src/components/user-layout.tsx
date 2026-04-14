@@ -39,8 +39,8 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-[100dvh] bg-[#0a0a0a] text-white flex flex-col">
       <header className="flex items-center justify-between px-4 md:px-6 h-14 border-b border-[#1a1a1a] bg-[#0a0a0a] sticky top-0 z-50">
-        <Link href="/dashboard" className="text-lg font-bold tracking-tight text-white">
-          Flow
+        <Link href="/dashboard">
+          <img src="/navbar-logo.png" alt="Veo Flow API" className="h-8 object-contain" />
         </Link>
 
         <div className="flex items-center gap-3" ref={dropdownRef}>
@@ -52,7 +52,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-2 focus:outline-none"
           >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#5a3398] to-[#5547fd] flex items-center justify-center text-sm font-bold text-white">
               {displayName.charAt(0).toUpperCase()}
             </div>
             <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />

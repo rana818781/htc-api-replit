@@ -25,8 +25,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {isLoaded && isSignedIn && (
         <>
           <div className="md:hidden flex items-center justify-between p-4 border-b border-border">
-            <Link href="/dashboard" className="text-xl font-bold text-primary tracking-tight">
-              Veo Flow API
+            <Link href="/dashboard">
+              <img src="/navbar-logo.png" alt="Veo Flow API" className="h-8 object-contain" />
             </Link>
             <Button
               variant="ghost"
@@ -43,8 +43,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             } md:flex flex-col w-full md:w-64 border-r border-border bg-sidebar shrink-0 p-4`}
           >
             <div className="hidden md:block mb-8 px-2">
-              <Link href="/dashboard" className="text-2xl font-bold text-primary tracking-tight">
-                Veo Flow API
+              <Link href="/dashboard">
+                <img src="/navbar-logo.png" alt="Veo Flow API" className="h-9 object-contain" />
               </Link>
             </div>
 

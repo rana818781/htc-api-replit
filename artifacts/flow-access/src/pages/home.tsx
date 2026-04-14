@@ -320,8 +320,7 @@ export default function Home() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-2">
-            <Play className="h-5 w-5 text-primary fill-primary" />
-            <span className="font-bold text-lg tracking-tight">Flow</span>
+            <img src="/navbar-logo.png" alt="Veo Flow API" className="h-8 object-contain" />
           </div>
           <nav className="flex items-center gap-3">
             <Link href="/plans" className="text-sm text-white/60 hover:text-white transition-colors hidden sm:block">
@@ -330,7 +329,7 @@ export default function Home() {
             <Button variant="ghost" size="sm" asChild className="text-sm text-white/60 hover:text-white" data-testid="link-login">
               <Link href="/sign-in">Sign In</Link>
             </Button>
-            <Button size="sm" asChild className="text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-5" data-testid="link-register">
+            <Button size="sm" asChild className="text-sm font-semibold bg-gradient-to-r from-[#5a3398] to-[#5547fd] hover:opacity-90 text-white rounded-full px-5" data-testid="link-register">
               <Link href="/sign-up">Get Started</Link>
             </Button>
           </nav>
@@ -341,13 +340,11 @@ export default function Home() {
         <AnimatedMosaicBackground />
 
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-          <h1 className="text-7xl sm:text-8xl md:text-9xl font-bold tracking-tighter mb-6 bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent drop-shadow-2xl">
-            Flow
-          </h1>
+          <img src="/hero-logo.png" alt="Veo Flow API" className="h-24 sm:h-32 md:h-40 object-contain mx-auto mb-6 drop-shadow-2xl" />
           <p className="text-white/60 text-base sm:text-lg max-w-xl mx-auto mb-8">
             Where the next wave of storytelling happens.
           </p>
-          <Button size="lg" asChild className="rounded-full px-8 h-12 text-base font-semibold bg-white text-black hover:bg-white/90 shadow-lg shadow-white/10">
+          <Button size="lg" asChild className="rounded-full px-8 h-12 text-base font-semibold bg-gradient-to-r from-[#5a3398] to-[#5547fd] text-white hover:opacity-90 shadow-lg shadow-[#5a3398]/30">
             <Link href="/sign-up">Create with Flow</Link>
           </Button>
         </div>
