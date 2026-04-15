@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Response, type NextFunction } from "express";
-import { eq, asc, sql, and, ne } from "drizzle-orm";
+import { eq, asc, sql, and, ne, gt } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db, usersTable, sessionsTable, usageLogsTable, apiTokensTable, plansTable } from "@workspace/db";
 import { requireAuth, requireApiToken, type AuthenticatedRequest } from "../middlewares/auth";
@@ -125,26 +125,23 @@ router.post("/extension/inject", requireAuthOrApiToken, async (req: Authenticate
 
   const creditsRemaining = Math.max(0, user.creditsTotal - user.creditsUsed);
 
+  const activeSessions = await db
+    .select()
+    .from(sessionsTable)
+    .where(eq(sessionsTable.isActive, true))
+    .orderBy(sql`${sessionsTable.lastUsedAt} ASC NULLS FIRST`);
+
   let session: typeof sessionsTable.$inferSelect | undefined;
 
-  if (user.lastSessionId) {
-    const [rotated] = await db
-      .select()
-      .from(sessionsTable)
-      .where(and(eq(sessionsTable.isActive, true), ne(sessionsTable.id, user.lastSessionId)))
-      .orderBy(asc(sessionsTable.lastUsedAt))
-      .limit(1);
-    session = rotated;
-  }
-
-  if (!session) {
-    const [fallback] = await db
-      .select()
-      .from(sessionsTable)
-      .where(eq(sessionsTable.isActive, true))
-      .orderBy(asc(sessionsTable.lastUsedAt))
-      .limit(1);
-    session = fallback;
+  if (activeSessions.length > 1 && user.lastSessionId) {
+    const lastIdx = activeSessions.findIndex(s => s.id === user.lastSessionId);
+    if (lastIdx !== -1) {
+      session = activeSessions[(lastIdx + 1) % activeSessions.length];
+    } else {
+      session = activeSessions[0];
+    }
+  } else {
+    session = activeSessions[0];
   }
 
   if (!session) {
