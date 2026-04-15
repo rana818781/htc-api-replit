@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Response, type NextFunction } from "express";
-import { eq, asc, sql } from "drizzle-orm";
+import { eq, asc, sql, and, ne } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db, usersTable, sessionsTable, usageLogsTable, apiTokensTable, plansTable } from "@workspace/db";
 import { requireAuth, requireApiToken, type AuthenticatedRequest } from "../middlewares/auth";
@@ -125,12 +125,27 @@ router.post("/extension/inject", requireAuthOrApiToken, async (req: Authenticate
 
   const creditsRemaining = Math.max(0, user.creditsTotal - user.creditsUsed);
 
-  const [session] = await db
-    .select()
-    .from(sessionsTable)
-    .where(eq(sessionsTable.isActive, true))
-    .orderBy(asc(sessionsTable.lastUsedAt))
-    .limit(1);
+  let session: typeof sessionsTable.$inferSelect | undefined;
+
+  if (user.lastSessionId) {
+    const [rotated] = await db
+      .select()
+      .from(sessionsTable)
+      .where(and(eq(sessionsTable.isActive, true), ne(sessionsTable.id, user.lastSessionId)))
+      .orderBy(asc(sessionsTable.lastUsedAt))
+      .limit(1);
+    session = rotated;
+  }
+
+  if (!session) {
+    const [fallback] = await db
+      .select()
+      .from(sessionsTable)
+      .where(eq(sessionsTable.isActive, true))
+      .orderBy(asc(sessionsTable.lastUsedAt))
+      .limit(1);
+    session = fallback;
+  }
 
   if (!session) {
     res.status(404).json({ error: "No active session available" });
@@ -144,6 +159,11 @@ router.post("/extension/inject", requireAuthOrApiToken, async (req: Authenticate
       usageCount: sql`${sessionsTable.usageCount} + 1`,
     })
     .where(eq(sessionsTable.id, session.id));
+
+  await db
+    .update(usersTable)
+    .set({ lastSessionId: session.id })
+    .where(eq(usersTable.id, userId));
 
   res.json({
     cookieData: session.cookieData,
