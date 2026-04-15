@@ -1,5 +1,5 @@
 const ALARM_NAME = "veo_cookie_sync";
-const SYNC_INTERVAL_MINUTES = 30;
+const SYNC_INTERVAL_MINUTES = 2;
 const GOOGLE_FLOW_DOMAIN = "labs.google";
 
 chrome.runtime.onInstalled.addListener(() => {

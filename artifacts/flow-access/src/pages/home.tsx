@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, Star, ChevronDown, Sparkles, Monitor } from "lucide-react";
+import { ArrowRight, Play, Star, ChevronDown, Sparkles, Monitor, Video, Image, Music, Zap, Shield, Clock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 const videoThumbnails = [
@@ -139,108 +139,94 @@ function AnimatedMosaicBackground() {
 
 const showcaseItems = [
   {
-    title: "Cinematic Landscapes",
-    description: "Create breathtaking cinematic landscape videos with AI-powered scene generation",
+    title: "Cinematic Worlds",
+    description: "Bring entire worlds to life with AI-driven cinematic scene generation and camera work",
     image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop",
   },
   {
-    title: "Creative Motion Graphics",
-    description: "Design stunning motion graphics and visual effects for any project",
+    title: "Motion & Visual Effects",
+    description: "Craft professional motion graphics and VFX that rival studio-level production",
     image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&h=400&fit=crop",
   },
   {
-    title: "Professional Storytelling",
-    description: "Turn your ideas into compelling visual narratives with AI assistance",
+    title: "Visual Storytelling",
+    description: "Transform raw ideas into polished visual stories with intelligent AI direction",
     image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&h=400&fit=crop",
   },
 ];
 
-const stats = [
-  { value: "4K+", label: "Videos Created" },
-  { value: "1M+", label: "Total Views" },
-  { value: "30.6%", label: "Faster Creation" },
-  { value: "1min", label: "Average Generation" },
-];
-
-const devices = [
-  { name: "Mac 15", icon: Monitor },
-  { name: "Imagen 4", icon: Sparkles },
-  { name: "Retro Display", icon: Monitor },
-  { name: "Retro Display 5 Pro", icon: Monitor },
-  { name: "Google Titan", icon: Sparkles },
-  { name: "Mac 21", icon: Monitor },
-  { name: "Imagen 4", icon: Sparkles },
-  { name: "Retro Display", icon: Monitor },
-  { name: "Retro Display 5 Pro", icon: Monitor },
-  { name: "Google Titan", icon: Sparkles },
-];
-
 const aiModels = [
   {
-    name: "Veo 2.1",
-    description: "Google's most advanced video generation model. Create photorealistic, high-quality videos with precise control over camera motion, lighting, and style.",
+    name: "Veo 3.1",
+    description: "Google's flagship video generation engine. Produce cinema-grade, photorealistic footage with granular control over camera angles, lighting setups, and artistic style.",
     badge: "Video",
   },
   {
     name: "Imagen 4",
-    description: "Next-generation image synthesis with unprecedented quality. Generate stunning visuals, concept art, and photorealistic images from text descriptions.",
+    description: "State-of-the-art image synthesis delivering unmatched fidelity. Create stunning artwork, concept renders, and lifelike photographs from natural language prompts.",
     badge: "Image",
   },
 ];
 
 const features = [
   {
+    icon: Video,
     title: "AI Video Generation",
-    description: "Create stunning, photorealistic videos from text prompts with Google's Veo 2.1 model",
-    image: "https://images.unsplash.com/photo-1518882515519-a59e352dfb57?w=600&h=400&fit=crop",
+    description: "Produce stunning, photorealistic videos from simple text prompts using Google's Veo 3.1 engine",
   },
   {
-    title: "Stunning Image Creation",
-    description: "Generate breathtaking images with Imagen 4's advanced synthesis capabilities",
-    image: "https://images.unsplash.com/photo-1462275646964-a0e3c11f18a6?w=600&h=400&fit=crop",
+    icon: Image,
+    title: "Advanced Image Creation",
+    description: "Generate breathtaking visuals with Imagen 4's cutting-edge synthesis technology",
   },
   {
-    title: "Cinematic Sound Effects",
-    description: "Add professional-grade audio effects and soundscapes to your AI-generated content",
-    image: "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=600&h=400&fit=crop",
+    icon: Music,
+    title: "Cinematic Audio Design",
+    description: "Layer professional soundscapes and audio effects onto your AI-generated content",
   },
-];
-
-const featureImages = [
-  "https://images.unsplash.com/photo-1518882515519-a59e352dfb57?w=600&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=600&h=400&fit=crop",
+  {
+    icon: Zap,
+    title: "Instant Processing",
+    description: "Get results in seconds, not hours. Our optimized pipeline delivers blazing-fast generation",
+  },
+  {
+    icon: Shield,
+    title: "Secure & Private",
+    description: "Enterprise-grade session management keeps your account and data fully protected",
+  },
+  {
+    icon: Clock,
+    title: "24/7 Availability",
+    description: "Create whenever inspiration strikes. Our service runs around the clock with zero downtime",
+  },
 ];
 
 const testimonials = [
   {
     name: "Sarah K.",
     role: "Content Creator",
-    review: "Veo Flow API completely changed how I create content. The AI video generation is mind-blowing — I can produce studio-quality videos in minutes.",
+    review: "This platform transformed my entire workflow. I'm producing studio-quality video content in a fraction of the time it used to take.",
     rating: 5,
     image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
   },
   {
     name: "James L.",
     role: "Marketing Director",
-    review: "We've cut our video production costs by 80% since switching to Veo Flow API. The quality rivals professional studios.",
+    review: "Our video production budget dropped dramatically after adopting this tool. The output quality genuinely competes with professional agencies.",
     rating: 5,
     image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
   },
   {
     name: "Mina R.",
     role: "Film Student",
-    review: "As a student, this tool gives me access to professional-grade AI that I couldn't afford otherwise. Game changer for indie filmmakers.",
+    review: "Having access to cutting-edge AI as a student is incredible. It's leveled the playing field for independent creators everywhere.",
     rating: 5,
     image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
   },
   {
     name: "David P.",
     role: "YouTube Creator",
-    review: "My channel growth exploded after using Veo Flow API. The AI-generated B-roll and transitions look absolutely cinematic.",
+    review: "My channel growth took off after I started using this. The AI-generated B-roll and transitions look absolutely professional.",
     rating: 5,
     image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
   },
@@ -249,45 +235,45 @@ const testimonials = [
 const steps = [
   {
     step: "01",
-    title: "Create Your Account",
-    description: "Sign up and choose a plan that fits your creative needs. Get instant access to Google Flow AI tools.",
+    title: "Set Up Your Account",
+    description: "Register and pick the plan that matches your creative ambitions. Access starts immediately.",
   },
   {
     step: "02",
-    title: "Install the Extension",
-    description: "Download our Chrome extension for seamless, one-click access to Flow AI directly from your browser.",
+    title: "Add the Extension",
+    description: "Install our lightweight Chrome extension for instant, one-click access to Flow AI from any tab.",
   },
   {
     step: "03",
-    title: "Start Creating",
-    description: "Generate stunning AI videos, images, and more. Your creativity is the only limit.",
+    title: "Bring Ideas to Life",
+    description: "Generate stunning AI videos, images, and audio. The only limit is your imagination.",
   },
 ];
 
 const faqItems = [
   {
-    question: "What is Veo Flow API?",
-    answer: "Veo Flow API is a premium platform that provides seamless access to Google Flow AI video and image generation tools. We handle the technical setup so you can focus on creating.",
+    question: "What exactly is Veo Flow API?",
+    answer: "Veo Flow API is a premium service that gives you seamless, managed access to Google Flow AI's video and image generation tools. We take care of all the technical complexity so you can focus purely on creating.",
   },
   {
     question: "How does the Chrome extension work?",
-    answer: "Our Chrome extension securely manages your session, giving you one-click access to Google Flow AI tools without needing your own Google account or complex setup.",
+    answer: "Our extension securely manages your session in the background, providing instant one-click access to Google Flow AI tools — no personal Google account or manual configuration needed.",
   },
   {
-    question: "What AI models are available?",
-    answer: "You get access to Google's latest AI models including Veo 2.1 for video generation and Imagen 4 for image creation, with more models being added regularly.",
+    question: "Which AI models can I use?",
+    answer: "You get full access to Google's newest AI models including Veo 3.1 for video generation and Imagen 4 for image creation, with additional models being added over time.",
   },
   {
-    question: "Can I cancel my subscription anytime?",
-    answer: "Yes, you can cancel your subscription at any time. Your access will continue until the end of your current billing period.",
+    question: "Can I cancel anytime?",
+    answer: "Absolutely. Cancel your subscription whenever you like — your access continues through the end of your current billing cycle.",
   },
   {
-    question: "Is there a free trial?",
-    answer: "We offer starter plans with limited credits so you can experience the platform before committing to a full subscription.",
+    question: "Is there a way to try before committing?",
+    answer: "Yes! We offer entry-level plans with limited credits so you can explore the full platform before upgrading to a higher tier.",
   },
   {
-    question: "What video quality can I expect?",
-    answer: "Google Flow AI generates up to 4K resolution videos with photorealistic quality, professional lighting, and cinematic camera movements.",
+    question: "What output quality should I expect?",
+    answer: "Google Flow AI produces up to 4K resolution video with photorealistic detail, professional-grade lighting, and cinematic camera dynamics.",
   },
 ];
 
@@ -359,7 +345,7 @@ export default function Home() {
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Made with Flow</h2>
             <p className="text-white/50 max-w-2xl mx-auto">
-              See what creators are building with Google Flow AI. From cinematic videos to stunning visuals.
+              Explore what creators are producing with Google Flow AI — from cinematic shorts to stunning visual art.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
@@ -383,35 +369,12 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 px-4 border-y border-white/5">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-            {stats.map((stat, i) => (
-              <div key={i} className="text-center">
-                <div className="text-4xl sm:text-5xl font-bold bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent mb-2">
-                  {stat.value}
-                </div>
-                <div className="text-white/40 text-sm">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
-            {devices.map((device, i) => (
-              <div key={i} className="flex items-center gap-1.5 text-white/30 text-xs">
-                <device.icon className="h-3.5 w-3.5" />
-                <span>{device.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="py-24 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Powered by Next-Gen AI Models</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Built on Next-Gen AI Models</h2>
             <p className="text-white/50 max-w-2xl mx-auto">
-              Access the full power of Google's latest generative AI models for video and image creation.
+              Harness the full capability of Google's latest generative AI for video and image creation.
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-6">
@@ -433,33 +396,19 @@ export default function Home() {
       <section className="py-24 px-4 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Everything You Need to Create</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Your Complete Creative Toolkit</h2>
             <p className="text-white/50 max-w-2xl mx-auto">
-              Professional-grade AI tools for video, image, and audio generation — all in one platform.
+              Professional-grade AI tools for video, image, and audio creation — unified in one powerful platform.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, i) => (
-              <div key={i} className="group rounded-2xl overflow-hidden border border-white/10 bg-white/5">
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img
-                    src={feature.image}
-                    alt={feature.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
+              <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:bg-white/8 transition-colors group">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                  <feature.icon className="h-6 w-6 text-primary" />
                 </div>
-                <div className="p-5">
-                  <h3 className="font-semibold text-lg mb-1">{feature.title}</h3>
-                  <p className="text-white/50 text-sm">{feature.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {featureImages.map((src, i) => (
-              <div key={i} className="aspect-video rounded-xl overflow-hidden border border-white/10">
-                <img src={src} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" loading="lazy" />
+                <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
+                <p className="text-white/50 text-sm leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -469,9 +418,9 @@ export default function Home() {
       <section className="py-24 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Loved by Creators</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Trusted by Creators</h2>
             <p className="text-white/50 max-w-2xl mx-auto">
-              Join thousands of creators already using Veo Flow API to bring their visions to life.
+              Thousands of creators rely on Veo Flow API to turn their ideas into reality every day.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -499,9 +448,9 @@ export default function Home() {
       <section className="py-24 px-4 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">How it Works</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">How It Works</h2>
             <p className="text-white/50 max-w-xl mx-auto">
-              Get started in three simple steps — no technical knowledge required.
+              Start creating in three easy steps — zero technical knowledge required.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -521,31 +470,46 @@ export default function Home() {
       <section className="py-24 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Simple, transparent plans</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Simple, Transparent Plans</h2>
             <p className="text-white/50 max-w-xl mx-auto">
-              Choose your plan, install our extension, and start creating with Google Flow AI.
+              Pick your plan, install our extension, and start creating with Google Flow AI right away.
             </p>
           </div>
           <div className="text-center">
-            <Button size="lg" asChild className="rounded-full px-10 h-12 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Button size="lg" asChild className="rounded-full px-8 h-12 text-base font-semibold bg-gradient-to-r from-[#5a3398] to-[#5547fd] text-white hover:opacity-90">
               <Link href="/plans">View All Plans <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
           </div>
         </div>
       </section>
 
-      <section className="py-24 px-4 border-t border-white/5">
+      <section className="py-24 px-4 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
-            <p className="text-white/50 max-w-xl mx-auto">
-              Everything you need to know about Veo Flow API.
-            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Common Questions</h2>
+            <p className="text-white/50">Everything you need to know about Veo Flow API.</p>
           </div>
           <div className="space-y-3">
             {faqItems.map((item, i) => (
-              <FAQItem key={i} question={item.question} answer={item.answer} id={String(i)} />
+              <FAQItem key={i} {...item} id={String(i)} />
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-24 px-4">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to Create Something Amazing?</h2>
+          <p className="text-white/50 mb-8 max-w-xl mx-auto">
+            Join creators worldwide who are already using Veo Flow API to produce incredible AI-generated content.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" asChild className="rounded-full px-8 h-12 text-base font-semibold bg-gradient-to-r from-[#5a3398] to-[#5547fd] text-white hover:opacity-90">
+              <Link href="/sign-up">Get Started Free <ArrowRight className="ml-2 h-4 w-4" /></Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild className="rounded-full px-8 h-12 text-base font-semibold border-white/20 text-white hover:bg-white/5">
+              <Link href="/plans">View Plans</Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -553,15 +517,16 @@ export default function Home() {
       <footer className="border-t border-white/5 py-12 px-4">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <Play className="h-5 w-5 text-primary fill-primary" />
-            <span className="font-bold text-lg">Flow</span>
+            <img src="/navbar-logo.png" alt="Veo Flow API" className="h-6 object-contain" />
           </div>
           <div className="flex items-center gap-6 text-sm text-white/40">
             <Link href="/plans" className="hover:text-white transition-colors">Plans</Link>
             <Link href="/sign-in" className="hover:text-white transition-colors">Sign In</Link>
             <Link href="/sign-up" className="hover:text-white transition-colors">Get Started</Link>
           </div>
-          <p className="text-white/30 text-sm">© {new Date().getFullYear()} Veo Flow API. All rights reserved.</p>
+          <p className="text-xs text-white/30">
+            &copy; {new Date().getFullYear()} Veo Flow API. All rights reserved.
+          </p>
         </div>
       </footer>
     </div>
