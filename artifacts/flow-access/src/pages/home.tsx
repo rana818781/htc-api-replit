@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, Star, ChevronDown, Sparkles, Monitor, Video, Image, Music, Zap, Shield, Clock } from "lucide-react";
+import { ArrowRight, Star, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 const videoThumbnails = [
@@ -158,46 +158,62 @@ const showcaseItems = [
 const aiModels = [
   {
     name: "Veo 3.1",
-    description: "Google's flagship video generation engine. Produce cinema-grade, photorealistic footage with granular control over camera angles, lighting setups, and artistic style.",
+    emoji: "\u2728",
+    description: "State-of-the-art video generation with unprecedented quality and control",
     badge: "Video",
   },
   {
     name: "Imagen 4",
-    description: "State-of-the-art image synthesis delivering unmatched fidelity. Create stunning artwork, concept renders, and lifelike photographs from natural language prompts.",
+    emoji: "\u2728",
+    description: "Photorealistic image synthesis with incredible detail and accuracy",
     badge: "Image",
+  },
+  {
+    name: "Nano Banana",
+    emoji: "\u2728",
+    description: "Fast, creative image generation for rapid iteration and experimentation",
+    badge: "Image",
+  },
+  {
+    name: "Nano Banana 2 Pro",
+    emoji: "\u2728",
+    description: "Enhanced generation with higher fidelity, better coherence and premium quality",
+    badge: "Image \u00B7 Pro",
   },
 ];
 
+const tickerItems = ["Veo 3.1", "Imagen 4", "Nano Banana", "Nano Banana 2 Pro", "Google Flow"];
+
 const features = [
   {
-    icon: Video,
+    emoji: "\uD83C\uDFAC",
     title: "AI Video Generation",
-    description: "Produce stunning, photorealistic videos from simple text prompts using Google's Veo 3.1 engine",
+    description: "Generate cinematic, high-quality videos up to 8 seconds long using Google's Veo 3.1 \u2014 the world's most advanced video model.",
   },
   {
-    icon: Image,
-    title: "Advanced Image Creation",
-    description: "Generate breathtaking visuals with Imagen 4's cutting-edge synthesis technology",
+    emoji: "\uD83D\uDDBC\uFE0F",
+    title: "Stunning Image Creation",
+    description: "Create photorealistic or artistic images with Imagen 4 and Nano Banana models \u2014 from portraits to abstract art, at any resolution.",
   },
   {
-    icon: Music,
-    title: "Cinematic Audio Design",
-    description: "Layer professional soundscapes and audio effects onto your AI-generated content",
+    emoji: "\u26A1",
+    title: "Credits-Based Pricing",
+    description: "Pay only for what you use. Each plan comes with generous credit allocations \u2014 no hidden fees, no per-generation surprises.",
   },
   {
-    icon: Zap,
-    title: "Instant Processing",
-    description: "Get results in seconds, not hours. Our optimized pipeline delivers blazing-fast generation",
-  },
-  {
-    icon: Shield,
+    emoji: "\uD83D\uDD12",
     title: "Secure & Private",
-    description: "Enterprise-grade session management keeps your account and data fully protected",
+    description: "Your generations and account data are fully secured. We never share your content \u2014 your creative work stays yours, always.",
   },
   {
-    icon: Clock,
-    title: "24/7 Availability",
-    description: "Create whenever inspiration strikes. Our service runs around the clock with zero downtime",
+    emoji: "\uD83C\uDF10",
+    title: "Chrome Extension",
+    description: "Install our lightweight browser extension for one-click access to Google Flow with your credentials auto-managed and secured.",
+  },
+  {
+    emoji: "\uD83C\uDFC6",
+    title: "Priority Support",
+    description: "Get help when you need it. Ultra and Unlimited members enjoy private support with faster response times, always.",
   },
 ];
 
@@ -369,24 +385,45 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="py-6 border-y border-white/5 overflow-hidden">
+        <div className="text-center mb-4">
+          <span className="text-[10px] font-semibold tracking-[0.2em] text-white/30 uppercase">Powered by</span>
+        </div>
+        <div className="relative">
+          <div className="flex animate-ticker whitespace-nowrap">
+            {[...tickerItems, ...tickerItems, ...tickerItems, ...tickerItems].map((item, i) => (
+              <span key={i} className="flex items-center gap-2 mx-6 text-white/40 text-sm font-medium shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-white/30" />
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="py-24 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Built on Next-Gen AI Models</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Powered by Next-Gen AI Models</h2>
             <p className="text-white/50 max-w-2xl mx-auto">
-              Harness the full capability of Google's latest generative AI for video and image creation.
+              Access the most advanced generative AI models available
             </p>
           </div>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {aiModels.map((model, i) => (
-              <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-8 hover:bg-white/8 transition-colors">
-                <div className="flex items-center gap-3 mb-4">
-                  <h3 className="text-2xl font-bold">{model.name}</h3>
-                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/20 text-primary border border-primary/30">
+              <div key={i} className="rounded-2xl border border-white/10 bg-[#12141a] p-6 hover:bg-white/[0.06] transition-colors flex flex-col justify-between min-h-[220px]">
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4 text-lg">
+                    {model.emoji}
+                  </div>
+                  <h3 className="text-lg font-bold mb-2">{model.name}</h3>
+                  <p className="text-white/40 text-sm leading-relaxed">{model.description}</p>
+                </div>
+                <div className="mt-4">
+                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-white/10 text-white/60 border border-white/10">
                     {model.badge}
                   </span>
                 </div>
-                <p className="text-white/50 leading-relaxed">{model.description}</p>
               </div>
             ))}
           </div>
@@ -396,19 +433,17 @@ export default function Home() {
       <section className="py-24 px-4 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Your Complete Creative Toolkit</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Everything You Need to Create</h2>
             <p className="text-white/50 max-w-2xl mx-auto">
-              Professional-grade AI tools for video, image, and audio creation — unified in one powerful platform.
+              Professional AI tools built for creators who demand the best
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {features.map((feature, i) => (
-              <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:bg-white/8 transition-colors group">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                  <feature.icon className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-                <p className="text-white/50 text-sm leading-relaxed">{feature.description}</p>
+              <div key={i} className="rounded-2xl border border-white/10 bg-[#12141a] p-6 hover:bg-white/[0.06] transition-colors">
+                <div className="text-2xl mb-4">{feature.emoji}</div>
+                <h3 className="font-semibold text-base mb-2">{feature.title}</h3>
+                <p className="text-white/40 text-sm leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
