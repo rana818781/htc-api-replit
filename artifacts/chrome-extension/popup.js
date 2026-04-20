@@ -134,7 +134,7 @@ document.getElementById("inject-btn").addEventListener("click", async () => {
   ok.style.display = "none";
 
   chrome.runtime.sendMessage({ type: "FA_INJECT" }, (resp) => {
-    btn.textContent = "Re-inject Session";
+    btn.textContent = "Re-inject API";
     btn.disabled = false;
 
     if (resp?.success) {
