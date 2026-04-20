@@ -102,13 +102,13 @@ export default function Admin() {
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
           <ShieldAlert className="h-8 w-8 text-primary" /> Admin Panel
         </h1>
-        <p className="text-muted-foreground mt-1">Manage platform sessions, users, and monitor activity.</p>
+        <p className="text-muted-foreground mt-1">Manage platform APIs, users, and monitor activity.</p>
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="mb-6 grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="sessions">Sessions</TabsTrigger>
+          <TabsTrigger value="sessions">APIs</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="usage">Usage Logs</TabsTrigger>
         </TabsList>
@@ -145,7 +145,7 @@ function OverviewTab() {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
+          <CardTitle className="text-sm font-medium">Total APIs</CardTitle>
           <Key className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -154,7 +154,7 @@ function OverviewTab() {
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+          <CardTitle className="text-sm font-medium">Active APIs</CardTitle>
           <Key className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
@@ -198,7 +198,7 @@ function SessionForm({ form, onSubmit, isPending, submitLabel }: {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField control={form.control} name="label" render={({ field }) => (
           <FormItem>
-            <FormLabel>Session Label</FormLabel>
+            <FormLabel>API Label</FormLabel>
             <FormControl><Input placeholder="e.g. Account 1 - rana@veo.gemisubex.com" {...field} /></FormControl>
             <FormMessage />
           </FormItem>
@@ -240,7 +240,7 @@ function SessionForm({ form, onSubmit, isPending, submitLabel }: {
           <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3">
             <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
             <div className="space-y-1 leading-none">
-              <FormLabel className="cursor-pointer">Active (users will be assigned this session)</FormLabel>
+              <FormLabel className="cursor-pointer">Active (users will be assigned this API)</FormLabel>
             </div>
           </FormItem>
         )} />
@@ -281,23 +281,23 @@ function SessionsTab() {
     if (!editSessionId) return;
     updateMutation.mutate({ id: editSessionId, data: values }, {
       onSuccess: () => {
-        toast({ title: "Session Updated" });
+        toast({ title: "API Updated" });
         setEditSessionId(null);
         queryClient.invalidateQueries({ queryKey: getListAdminSessionsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
       },
-      onError: () => toast({ title: "Error", description: "Failed to update session.", variant: "destructive" }),
+      onError: () => toast({ title: "Error", description: "Failed to update API.", variant: "destructive" }),
     });
   };
 
   const handleDelete = (id: number) => {
     deleteMutation.mutate({ id }, {
       onSuccess: () => {
-        toast({ title: "Session Deleted" });
+        toast({ title: "API Deleted" });
         queryClient.invalidateQueries({ queryKey: getListAdminSessionsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
       },
-      onError: () => toast({ title: "Error", description: "Failed to delete session.", variant: "destructive" }),
+      onError: () => toast({ title: "Error", description: "Failed to delete API.", variant: "destructive" }),
     });
   };
 
@@ -332,14 +332,14 @@ function SessionsTab() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Session Health Monitor</CardTitle>
+            <CardTitle>API Health Monitor</CardTitle>
             <CardDescription>
-              Overview of all Google session cookies — health, age, and auto-sync status.
+              Overview of all Google API credentials — health, age, and auto-sync status.
             </CardDescription>
           </div>
           <Link href="/admin/sessions/new">
             <Button size="sm" data-testid="btn-new-session">
-              <Plus className="h-4 w-4 mr-2" /> Add Session
+              <Plus className="h-4 w-4 mr-2" /> Add API
             </Button>
           </Link>
         </CardHeader>
@@ -349,7 +349,7 @@ function SessionsTab() {
               {(!sessions || sessions.length === 0) && (
                 <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground gap-3">
                   <Key className="h-12 w-12 opacity-20" />
-                  <p className="text-sm">No sessions yet. Add a Google session to get started.</p>
+                  <p className="text-sm">No APIs yet. Add a Google API to get started.</p>
                 </div>
               )}
               {sessions && sessions.length > 0 && (
@@ -414,10 +414,10 @@ function SessionsTab() {
                               </DialogTrigger>
                               <DialogContent className="max-w-xl">
                                 <DialogHeader>
-                                  <DialogTitle>Edit Session</DialogTitle>
-                                  <DialogDescription>Update cookie data or label for this session.</DialogDescription>
+                                  <DialogTitle>Edit API</DialogTitle>
+                                  <DialogDescription>Update credentials or label for this API.</DialogDescription>
                                 </DialogHeader>
-                                <SessionForm form={editForm} onSubmit={onEditSubmit} isPending={updateMutation.isPending} submitLabel="Update Session" />
+                                <SessionForm form={editForm} onSubmit={onEditSubmit} isPending={updateMutation.isPending} submitLabel="Update API" />
                               </DialogContent>
                             </Dialog>
 
@@ -429,7 +429,7 @@ function SessionsTab() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Delete "{session.label}"?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    This session will be permanently removed. Users assigned to it will lose access until a new session is available.
+                                    This API will be permanently removed. Users assigned to it will lose access until a new API is available.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -453,18 +453,18 @@ function SessionsTab() {
       <Dialog open={syncDialogSessionId !== null} onOpenChange={(open) => { if (!open) setSyncDialogSessionId(null); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Auto Cookie Sync Setup</DialogTitle>
+            <DialogTitle>Auto Credentials Sync Setup</DialogTitle>
             <DialogDescription>
-              Install the "Session Keeper" extension on your session account's browser. It will automatically send fresh cookies to this session.
+              Install the "API Keeper" extension on your API account's browser. It will automatically send fresh credentials to this API.
             </DialogDescription>
           </DialogHeader>
           {syncSession && (
             <div className="space-y-4">
               <div>
-                <p className="text-sm font-medium mb-1">Session: {syncSession.label}</p>
+                <p className="text-sm font-medium mb-1">API: {syncSession.label}</p>
                 {syncSession.cookieUpdatedAt && (
                   <p className="text-xs text-muted-foreground">
-                    Last cookie update: {formatDistanceToNow(new Date(syncSession.cookieUpdatedAt), { addSuffix: true })}
+                    Last update: {formatDistanceToNow(new Date(syncSession.cookieUpdatedAt), { addSuffix: true })}
                   </p>
                 )}
               </div>
@@ -492,10 +492,10 @@ function SessionsTab() {
                   <div className="rounded-lg border border-border bg-muted/50 p-3">
                     <p className="text-sm font-medium mb-2">Setup Steps:</p>
                     <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
-                      <li><a href="/session-keeper-extension.zip" download className="text-primary underline font-medium">Download the Session Keeper extension</a></li>
-                      <li>Unzip and install it on the browser where your session account is logged into Google Flow</li>
-                      <li>Open the Session Keeper popup and paste the <strong>Sync Key</strong> and <strong>API URL</strong> above</li>
-                      <li>It will automatically sync cookies every 30 minutes</li>
+                      <li><a href="/session-keeper-extension.zip" download className="text-primary underline font-medium">Download the API Keeper extension</a></li>
+                      <li>Unzip and install it on the browser where your API account is logged into Google Flow</li>
+                      <li>Open the API Keeper popup and paste the <strong>Sync Key</strong> and <strong>API URL</strong> above</li>
+                      <li>It will automatically sync credentials every 2 minutes</li>
                     </ol>
                   </div>
                   <Button variant="outline" className="w-full" onClick={() => handleGenerateSyncKey(syncSession.id)}>
@@ -505,7 +505,7 @@ function SessionsTab() {
               ) : (
                 <div className="text-center py-4">
                   <p className="text-sm text-muted-foreground mb-4">
-                    Generate a sync key to enable auto cookie sync for this session.
+                    Generate a sync key to enable auto credentials sync for this API.
                   </p>
                   <Button onClick={() => handleGenerateSyncKey(syncSession.id)} disabled={syncKeyMutation.isPending}>
                     <Key className="h-4 w-4 mr-2" /> Generate Sync Key

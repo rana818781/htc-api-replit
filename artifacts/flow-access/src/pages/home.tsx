@@ -273,7 +273,7 @@ const faqItems = [
   },
   {
     question: "How does the Chrome extension work?",
-    answer: "Our extension securely manages your session in the background, providing instant one-click access to Google Flow AI tools — no personal Google account or manual configuration needed.",
+    answer: "Our extension securely manages your API access in the background, providing instant one-click access to Google Flow AI tools — no personal Google account or manual configuration needed.",
   },
   {
     question: "Which AI models can I use?",

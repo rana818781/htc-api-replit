@@ -69,7 +69,7 @@ export default function UserDashboard() {
             Welcome to Veo Flow API
           </h1>
           <p className="text-sm md:text-base text-gray-400 mt-2 md:mt-3 max-w-lg leading-relaxed">
-            Access Google Flow AI video generation with your managed session.
+            Access Google Flow AI video generation with your managed API.
             Create stunning videos with just a few clicks.
           </p>
         </div>

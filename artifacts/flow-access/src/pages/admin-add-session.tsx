@@ -38,12 +38,12 @@ export default function AdminAddSession() {
   const onSubmit = (values: z.infer<typeof sessionSchema>) => {
     createMutation.mutate({ data: values }, {
       onSuccess: () => {
-        toast({ title: "Session Added", description: `"${values.label}" is now live.` });
+        toast({ title: "API Added", description: `"${values.label}" is now live.` });
         queryClient.invalidateQueries({ queryKey: getListAdminSessionsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
         navigate("/admin");
       },
-      onError: () => toast({ title: "Error", description: "Failed to add session.", variant: "destructive" }),
+      onError: () => toast({ title: "Error", description: "Failed to add API.", variant: "destructive" }),
     });
   };
 
@@ -56,9 +56,9 @@ export default function AdminAddSession() {
         </button>
       </Link>
 
-      <h1 className="text-3xl font-bold tracking-tight mb-1">Add Google Session</h1>
+      <h1 className="text-3xl font-bold tracking-tight mb-1">Add Google API</h1>
       <p className="text-muted-foreground mb-8">
-        Add your premium Google account session so users can access Google Flow.
+        Add your premium Google account API so users can access Google Flow.
       </p>
 
       {/* Why JSON only */}
@@ -193,7 +193,7 @@ export default function AdminAddSession() {
       <div className="rounded-lg border border-border bg-card p-5">
         <div className="flex items-center gap-2 mb-1">
           <Lock className="h-4 w-4 text-primary" />
-          <h2 className="font-semibold text-base">Session Details</h2>
+          <h2 className="font-semibold text-base">API Details</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-5">একটি label দিন এবং JSON কুকি paste করুন।</p>
 
@@ -201,7 +201,7 @@ export default function AdminAddSession() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <FormField control={form.control} name="label" render={({ field }) => (
               <FormItem>
-                <FormLabel>Session Label</FormLabel>
+                <FormLabel>API Label</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g. Premium Account 1 (myemail@gmail.com)" {...field} />
                 </FormControl>
@@ -237,7 +237,7 @@ export default function AdminAddSession() {
                 Cancel
               </Button>
               <Button type="submit" className="flex-1" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Adding..." : "Add Session to Pool"}
+                {createMutation.isPending ? "Adding..." : "Add API to Pool"}
               </Button>
             </div>
           </form>

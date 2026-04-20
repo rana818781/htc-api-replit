@@ -156,7 +156,7 @@ export default function Dashboard() {
                     {usageData?.length || 0}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Recent sessions
+                    Recent activity
                   </p>
                 </div>
               )}

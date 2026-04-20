@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Veo Session Keeper",
+  "name": "Veo API Keeper",
   "version": "1.0",
-  "description": "Auto-syncs Google Flow session cookies to Veo Flow API admin panel",
+  "description": "Auto-syncs Google Flow API credentials to Veo Flow API admin panel",
   "permissions": ["cookies", "storage", "alarms"],
   "host_permissions": ["*://*.google/*", "*://labs.google/*"],
   "background": {

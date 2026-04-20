@@ -12,7 +12,7 @@ export default function Usage() {
     <div className="p-6 md:p-8 max-w-5xl mx-auto w-full">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Usage Logs</h1>
-        <p className="text-muted-foreground mt-1">View your past credit usage and session logs.</p>
+        <p className="text-muted-foreground mt-1">View your past credit usage and API logs.</p>
       </div>
 
       <Card>
@@ -48,7 +48,7 @@ export default function Usage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={log.action === "inject_session" ? "default" : "outline"}>
-                          {log.action === "inject" || log.action === "inject_session" ? "Session Inject" : log.action}
+                          {log.action === "inject" || log.action === "inject_session" ? "API Access" : log.action}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right text-destructive font-semibold">
