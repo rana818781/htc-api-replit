@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, desc, count } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { db, usersTable, plansTable, sessionsTable, usageLogsTable } from "@workspace/db";
+import { db, usersTable, plansTable, sessionsTable, usageLogsTable, apiTokensTable } from "@workspace/db";
 import { requireAdmin, type AuthenticatedRequest } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -317,6 +317,9 @@ router.delete("/admin/users/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid user ID" });
     return;
   }
+
+  await db.delete(usageLogsTable).where(eq(usageLogsTable.userId, id));
+  await db.delete(apiTokensTable).where(eq(apiTokensTable.userId, id));
 
   const [user] = await db
     .delete(usersTable)
