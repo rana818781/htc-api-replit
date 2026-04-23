@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, count } from "drizzle-orm";
+import { eq, desc, count, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { db, usersTable, plansTable, sessionsTable, usageLogsTable, apiTokensTable } from "@workspace/db";
@@ -263,6 +263,7 @@ router.patch("/admin/users/:id", async (req: AuthenticatedRequest, res): Promise
       return;
     }
     updates.passwordHash = await bcrypt.hash(newPassword, 10);
+    updates.tokenVersion = sql`${usersTable.tokenVersion} + 1`;
   }
   if (planId !== undefined) {
     updates.planId = planId;

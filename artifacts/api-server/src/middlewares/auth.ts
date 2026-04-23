@@ -13,23 +13,23 @@ export interface AuthenticatedRequest extends Request {
   dbUser?: typeof usersTable.$inferSelect;
 }
 
-export function signToken(userId: number): string {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "30d" });
+export function signToken(userId: number, tokenVersion: number = 0): string {
+  return jwt.sign({ userId, tv: tokenVersion }, JWT_SECRET, { expiresIn: "30d" });
 }
 
-export function verifyToken(token: string): { userId: number } | null {
+export function verifyToken(token: string): { userId: number; tv?: number } | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as { userId: number };
+    return jwt.verify(token, JWT_SECRET) as { userId: number; tv?: number };
   } catch {
     return null;
   }
 }
 
-export function requireAuth(
+export async function requireAuth(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
-): void {
+): Promise<void> {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Unauthorized" });
@@ -43,7 +43,18 @@ export function requireAuth(
     return;
   }
 
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, payload.userId));
+
+  if (!user || (user.tokenVersion ?? 0) !== (payload.tv ?? 0)) {
+    res.status(401).json({ error: "Session expired. Please sign in again." });
+    return;
+  }
+
   req.userId = payload.userId;
+  req.dbUser = user;
   next();
 }
 
@@ -72,7 +83,12 @@ export async function requireAdmin(
     .from(usersTable)
     .where(eq(usersTable.id, payload.userId));
 
-  if (!user || !user.isAdmin) {
+  if (!user || (user.tokenVersion ?? 0) !== (payload.tv ?? 0)) {
+    res.status(401).json({ error: "Session expired. Please sign in again." });
+    return;
+  }
+
+  if (!user.isAdmin) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -106,7 +122,12 @@ export async function requireReseller(
     .from(usersTable)
     .where(eq(usersTable.id, payload.userId));
 
-  if (!user || (!user.isAdmin && !user.isReseller)) {
+  if (!user || (user.tokenVersion ?? 0) !== (payload.tv ?? 0)) {
+    res.status(401).json({ error: "Session expired. Please sign in again." });
+    return;
+  }
+
+  if (!user.isAdmin && !user.isReseller) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }

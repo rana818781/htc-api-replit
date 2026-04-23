@@ -46,7 +46,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     })
     .returning();
 
-  const token = signToken(user.id);
+  const token = signToken(user.id, user.tokenVersion);
 
   res.status(201).json({
     token,
@@ -83,7 +83,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
-  const token = signToken(user.id);
+  const token = signToken(user.id, user.tokenVersion);
 
   res.json({
     token,

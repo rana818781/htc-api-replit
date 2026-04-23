@@ -107,6 +107,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear();
   }, []);
 
+  useEffect(() => {
+    const handler = () => {
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      setAuthTokenGetter(null);
+      queryClient.clear();
+      if (window.location.pathname !== "/login" && window.location.pathname !== "/register" && window.location.pathname !== "/") {
+        window.location.href = "/login";
+      }
+    };
+    window.addEventListener("veoflowapi:unauthorized", handler);
+    return () => window.removeEventListener("veoflowapi:unauthorized", handler);
+  }, []);
+
   return (
     <AuthContext.Provider value={{ user, token, isLoaded, isSignedIn: !!user, login, register, signOut }}>
       {children}

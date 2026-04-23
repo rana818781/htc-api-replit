@@ -259,7 +259,10 @@ router.patch("/reseller/users/:id/password", async (req: AuthenticatedRequest, r
 
   try {
     const passwordHash = await bcrypt.hash(newPassword, 10);
-    await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, userId));
+    await db
+      .update(usersTable)
+      .set({ passwordHash, tokenVersion: sql`${usersTable.tokenVersion} + 1` })
+      .where(eq(usersTable.id, userId));
     res.json({ success: true });
   } catch (err) {
     console.error("Failed to change password:", err);
