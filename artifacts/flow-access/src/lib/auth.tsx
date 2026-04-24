@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
 
 interface AuthUser {
@@ -52,7 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const parsed = JSON.parse(savedUser) as AuthUser;
         setToken(savedToken);
         setUser(parsed);
-        setAuthTokenGetter(() => savedToken);
       } catch {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
@@ -73,7 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
           localStorage.removeItem(TOKEN_KEY);
           localStorage.removeItem(USER_KEY);
-          setAuthTokenGetter(null);
         })
         .finally(() => setIsLoaded(true));
     } else {
@@ -83,11 +80,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleAuth = useCallback(async (path: string, username: string, password: string) => {
     const data = await apiCall(path, { username, password });
-    setToken(data.token);
-    setUser(data.user);
     localStorage.setItem(TOKEN_KEY, data.token);
     localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-    setAuthTokenGetter(() => data.token);
+    setToken(data.token);
+    setUser(data.user);
   }, []);
 
   const login = useCallback((username: string, password: string) => {
@@ -99,11 +95,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [handleAuth]);
 
   const signOut = useCallback(() => {
-    setToken(null);
-    setUser(null);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
-    setAuthTokenGetter(null);
+    setToken(null);
+    setUser(null);
     queryClient.clear();
   }, []);
 
@@ -113,10 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
-      setAuthTokenGetter(null);
       queryClient.clear();
-      if (window.location.pathname !== "/login" && window.location.pathname !== "/register" && window.location.pathname !== "/") {
-        window.location.href = "/login";
+      const path = window.location.pathname;
+      if (path !== "/sign-in" && path !== "/sign-up" && path !== "/" && path !== "/plans") {
+        window.location.href = "/sign-in";
       }
     };
     window.addEventListener("veoflowapi:unauthorized", handler);

@@ -1,4 +1,13 @@
 import { QueryCache, MutationCache, QueryClient } from "@tanstack/react-query";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
+
+setAuthTokenGetter(() => {
+  try {
+    return localStorage.getItem("veoflowapi_token");
+  } catch {
+    return null;
+  }
+});
 
 function handleApiError(error: unknown): void {
   const status = (error as { status?: number } | null)?.status;
