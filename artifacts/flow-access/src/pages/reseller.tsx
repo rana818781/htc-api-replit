@@ -222,6 +222,28 @@ export default function ResellerPanel() {
   const [showAddPwd, setShowAddPwd] = useState(false);
   const [showChangePwd, setShowChangePwd] = useState(false);
 
+  const [dateFilter, setDateFilter] = useState<string>("all");
+
+  const dateGroups = (() => {
+    const groups = new Map<string, number>();
+    users.forEach((u) => {
+      if (!u.createdAt) return;
+      const d = new Date(u.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      groups.set(key, (groups.get(key) || 0) + 1);
+    });
+    return Array.from(groups.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  })();
+
+  const filteredUsers = dateFilter === "all"
+    ? users
+    : users.filter((u) => {
+        if (!u.createdAt) return false;
+        const d = new Date(u.createdAt);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        return key === dateFilter;
+      });
+
   const loadData = useCallback(async () => {
     try {
       const [usersData, statsData] = await Promise.all([
@@ -498,6 +520,27 @@ export default function ResellerPanel() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <span className="text-sm text-muted-foreground">Filter by date added:</span>
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="w-[280px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All time ({users.length} users)</SelectItem>
+                {dateGroups.map(([date, count]) => (
+                  <SelectItem key={date} value={date}>
+                    {format(new Date(date + "T00:00:00"), "dd MMM yyyy")} — {count} user{count === 1 ? "" : "s"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {dateFilter !== "all" && (
+              <span className="text-sm text-muted-foreground">
+                Showing {filteredUsers.length} user{filteredUsers.length === 1 ? "" : "s"}
+              </span>
+            )}
+          </div>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -513,7 +556,7 @@ export default function ResellerPanel() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((u) => {
+                {filteredUsers.map((u) => {
                   const addedByName = isAdmin && u.addedBy
                     ? stats?.resellerBreakdown?.find(r => r.resellerId === u.addedBy)?.resellerName || `#${u.addedBy}`
                     : null;
@@ -576,10 +619,12 @@ export default function ResellerPanel() {
                     </TableRow>
                   );
                 })}
-                {users.length === 0 && (
+                {filteredUsers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground py-8">
-                      No users added yet. Click "Add User" to get started.
+                      {users.length === 0
+                        ? 'No users added yet. Click "Add User" to get started.'
+                        : "No users were added on the selected date."}
                     </TableCell>
                   </TableRow>
                 )}

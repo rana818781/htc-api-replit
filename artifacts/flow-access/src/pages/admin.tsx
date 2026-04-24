@@ -534,6 +534,29 @@ function UsersTab() {
   const [editUserId, setEditUserId] = useState<number | null>(null);
   const [showCreatePwd, setShowCreatePwd] = useState(false);
   const [showEditPwd, setShowEditPwd] = useState(false);
+  const [dateFilter, setDateFilter] = useState<string>("all");
+
+  const dateGroups = (() => {
+    const groups = new Map<string, number>();
+    (users || []).forEach((u) => {
+      const ts = (u as any).createdAt;
+      if (!ts) return;
+      const d = new Date(ts);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      groups.set(key, (groups.get(key) || 0) + 1);
+    });
+    return Array.from(groups.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  })();
+
+  const filteredUsers = dateFilter === "all"
+    ? (users || [])
+    : (users || []).filter((u) => {
+        const ts = (u as any).createdAt;
+        if (!ts) return false;
+        const d = new Date(ts);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        return key === dateFilter;
+      });
 
   const createForm = useForm<z.infer<typeof userSchema>>({
     resolver: zodResolver(userSchema),
@@ -646,6 +669,27 @@ function UsersTab() {
         </Dialog>
       </CardHeader>
       <CardContent>
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-sm text-muted-foreground">Filter by date added:</span>
+          <Select value={dateFilter} onValueChange={setDateFilter}>
+            <SelectTrigger className="w-[280px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All time ({users?.length || 0} users)</SelectItem>
+              {dateGroups.map(([date, count]) => (
+                <SelectItem key={date} value={date}>
+                  {format(new Date(date + "T00:00:00"), "dd MMM yyyy")} — {count} user{count === 1 ? "" : "s"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {dateFilter !== "all" && (
+            <span className="text-sm text-muted-foreground">
+              Showing {filteredUsers.length} user{filteredUsers.length === 1 ? "" : "s"}
+            </span>
+          )}
+        </div>
         {isLoading ? <Skeleton className="h-[300px]" /> : (
           <Table>
             <TableHeader>
@@ -654,12 +698,13 @@ function UsersTab() {
                 <TableHead>Plan</TableHead>
                 <TableHead>Credits (Used/Total)</TableHead>
                 <TableHead>Expires</TableHead>
+                <TableHead>Added On</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users?.map(u => (
+              {filteredUsers.map(u => (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.username || u.email}</TableCell>
                   <TableCell>{u.planName || "N/A"}</TableCell>
@@ -672,6 +717,9 @@ function UsersTab() {
                     ) : (
                       <span className="text-muted-foreground text-xs">—</span>
                     )}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {(u as any).createdAt ? format(new Date((u as any).createdAt), "dd MMM yyyy, HH:mm") : "—"}
                   </TableCell>
                   <TableCell className="space-x-1">
                     {u.isAdmin && <Badge variant="default">Admin</Badge>}
