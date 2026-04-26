@@ -11,6 +11,7 @@ import Home from "./pages/home";
 import UserDashboard from "./pages/user-dashboard";
 import Dashboard from "./pages/dashboard";
 import Plans from "./pages/plans";
+import Privacy from "./pages/privacy";
 import Usage from "./pages/usage";
 import Admin from "./pages/admin";
 import AdminAddSession from "./pages/admin-add-session";
@@ -144,6 +145,7 @@ function AppRoutes() {
         <Route path="/sign-up" component={SignUpRedirectIfAuthed} />
         <Route path="/dashboard" component={() => <UserProtectedRoute component={UserDashboard} />} />
         <Route path="/plans" component={() => <PublicRouteWithLayout component={Plans} />} />
+        <Route path="/privacy" component={Privacy} />
         <Route path="/usage" component={() => <ProtectedRoute component={Usage} />} />
         <Route path="/reseller" component={() => <ResellerRoute component={ResellerPanel} />} />
         <Route path="/admin/sessions/new" component={() => <AdminRoute component={AdminAddSession} />} />
