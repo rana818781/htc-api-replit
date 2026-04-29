@@ -180,39 +180,20 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-8 items-start md:items-center justify-between">
-            <div className="space-y-3 flex-1">
-              <div className="grid gap-2 text-sm font-medium">
-                <div className="flex items-center gap-2 p-2 rounded bg-background/50 border border-border">
-                  <span className="flex items-center justify-center bg-primary text-primary-foreground rounded-full w-6 h-6 text-xs shrink-0">1</span>
-                  Step 1: Download and unzip the extension
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded bg-background/50 border border-border">
-                  <span className="flex items-center justify-center bg-primary text-primary-foreground rounded-full w-6 h-6 text-xs shrink-0">2</span>
-                  Step 2: Open chrome://extensions in Chrome
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded bg-background/50 border border-border">
-                  <span className="flex items-center justify-center bg-primary text-primary-foreground rounded-full w-6 h-6 text-xs shrink-0">3</span>
-                  Step 3: Enable Developer Mode (top right corner)
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded bg-background/50 border border-border">
-                  <span className="flex items-center justify-center bg-primary text-primary-foreground rounded-full w-6 h-6 text-xs shrink-0">4</span>
-                  Step 4: Click "Load unpacked" and select the unzipped folder
-                </div>
-              </div>
-            </div>
-            
-            <div className="w-full md:w-auto shrink-0 flex flex-col items-center justify-center bg-background p-6 rounded-lg border border-border shadow-sm">
-              <Download className="h-10 w-10 text-primary mb-4" />
-              <Button asChild size="lg" className="w-full" data-testid="button-download-extension">
-                <a href="/veoflowapi-extension.zip" download>
-                  Download Extension
-                </a>
-              </Button>
-              <p className="text-xs text-muted-foreground mt-3 text-center">
-                .zip file (~10KB)
-              </p>
-            </div>
+          <div className="flex flex-col items-center justify-center bg-background p-8 rounded-lg border border-border shadow-sm">
+            <Download className="h-10 w-10 text-primary mb-4" />
+            <Button asChild size="lg" className="w-full max-w-xs" data-testid="button-get-extension">
+              <a
+                href="https://chromewebstore.google.com/detail/veo-flow-api-%E2%80%94-google-flo/nhpbdcgjjbnoalanbgaeonkhbkbldmja"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Get Extension
+              </a>
+            </Button>
+            <p className="text-xs text-muted-foreground mt-3 text-center">
+              Clicking this will take you to the Chrome Web Store to install the extension.
+            </p>
           </div>
         </CardContent>
       </Card>

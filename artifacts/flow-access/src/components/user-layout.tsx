@@ -95,7 +95,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
                 <DropdownItem icon={<CreditCard className="h-4 w-4" />} label="Plan & Pricing" href="/plans" onClick={() => setDropdownOpen(false)} />
                 <DropdownItem icon={<Users className="h-4 w-4" />} label="Refer & Earn" href="/dashboard" onClick={() => setDropdownOpen(false)} />
                 <DropdownItem icon={<History className="h-4 w-4" />} label="Generation History" href="/usage" onClick={() => setDropdownOpen(false)} />
-                <DropdownItem icon={<Download className="h-4 w-4" />} label="Get Extension" href="/dashboard" anchor onClick={() => setDropdownOpen(false)} />
+                <DropdownItem icon={<Download className="h-4 w-4" />} label="Get Extension" href="https://chromewebstore.google.com/detail/veo-flow-api-%E2%80%94-google-flo/nhpbdcgjjbnoalanbgaeonkhbkbldmja" external onClick={() => setDropdownOpen(false)} />
               </div>
 
               <div className="border-t border-[#2a2a2a] py-1">
@@ -122,19 +122,20 @@ function DropdownItem({
   label,
   href,
   onClick,
-  anchor,
+  external,
 }: {
   icon: React.ReactNode;
   label: string;
   href: string;
   onClick?: () => void;
-  anchor?: boolean;
+  external?: boolean;
 }) {
-  if (anchor) {
+  if (external) {
     return (
       <a
-        href="/veoflowapi-extension.zip"
-        download
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
         onClick={onClick}
         className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#1a1a1a] transition-colors"
       >
