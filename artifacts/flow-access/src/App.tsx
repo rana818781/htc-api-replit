@@ -16,6 +16,7 @@ import Usage from "./pages/usage";
 import Admin from "./pages/admin";
 import AdminAddSession from "./pages/admin-add-session";
 import ResellerPanel from "./pages/reseller";
+import Tutorials from "./pages/tutorials";
 import NotFound from "./pages/not-found";
 import AuthPage from "./pages/auth";
 import { Layout } from "./components/layout";
@@ -148,6 +149,7 @@ function AppRoutes() {
         <Route path="/privacy" component={Privacy} />
         <Route path="/usage" component={() => <ProtectedRoute component={Usage} />} />
         <Route path="/reseller" component={() => <ResellerRoute component={ResellerPanel} />} />
+        <Route path="/tutorials" component={() => <ResellerRoute component={Tutorials} />} />
         <Route path="/admin/sessions/new" component={() => <AdminRoute component={AdminAddSession} />} />
         <Route path="/admin" component={() => <AdminRoute component={Admin} />} />
         <Route component={() => <Layout><NotFound /></Layout>} />

@@ -2,29 +2,7 @@ import { useEffect } from "react";
 import { useGetCurrentUser, useGetExtensionToken } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { Play, MessageCircle } from "lucide-react";
-
-const TUTORIALS = [
-  {
-    title: "How Can Used Flow Ultra in Your Mobile Device",
-    thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-    url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-  },
-  {
-    title: "How To Use Flow in PC/Laptop tutorial",
-    thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-    url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-  },
-  {
-    title: "Flow setup for Mobile user's",
-    thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-    url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-  },
-  {
-    title: "Credit Problem & Flow Login Problem solution tutorial",
-    thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-    url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-  },
-];
+import { TutorialGrid } from "@/components/tutorial-grid";
 
 export default function UserDashboard() {
   const { toast } = useToast();
@@ -87,34 +65,8 @@ export default function UserDashboard() {
       </div>
 
       <div className="px-4 md:px-8 mt-10">
-        <h2 className="text-lg font-semibold text-white mb-4">Made with Flow</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {TUTORIALS.map((tut, i) => (
-            <a
-              key={i}
-              href={tut.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative bg-[#141414] rounded-xl overflow-hidden border border-[#1e1e1e] hover:border-[#333] transition-colors"
-            >
-              <div className="relative aspect-video bg-[#0d0d0d] overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-800/50 to-gray-900/80 flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Play className="h-6 w-6 text-white fill-white ml-0.5" />
-                  </div>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <span className="px-1.5 py-0.5 bg-white/10 rounded text-[10px]">Tutorial</span>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3">
-                <h3 className="text-sm font-medium text-gray-200 line-clamp-1">{tut.title}</h3>
-              </div>
-            </a>
-          ))}
-        </div>
+        <h2 className="text-lg font-semibold text-white mb-4">Tutorials</h2>
+        <TutorialGrid />
       </div>
 
       <div className="px-4 md:px-8 mt-10">

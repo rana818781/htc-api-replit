@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Star, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { TutorialGrid } from "@/components/tutorial-grid";
 
 const videoThumbnails = [
   "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=300&h=200&fit=crop",
@@ -353,6 +354,18 @@ export default function Home() {
 
         <div className="absolute bottom-8 z-10 animate-bounce">
           <ChevronDown className="h-6 w-6 text-white/40" />
+        </div>
+      </section>
+
+      <section className="py-24 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Watch &amp; Learn</h2>
+            <p className="text-white/50 max-w-2xl mx-auto">
+              Quick tutorials to help you get the most out of Veo Flow API.
+            </p>
+          </div>
+          <TutorialGrid columns="md:grid-cols-2 lg:grid-cols-4" />
         </div>
       </section>
 

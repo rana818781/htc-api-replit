@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LogOut, LayoutDashboard, CreditCard, Activity, ShieldAlert, UserPlus, Menu, X } from "lucide-react";
+import { LogOut, LayoutDashboard, CreditCard, Activity, ShieldAlert, UserPlus, Menu, X, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useGetCurrentUser } from "@workspace/api-client-react";
@@ -98,6 +98,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   >
                     <ShieldAlert className="h-5 w-5" />
                     <span>Admin Panel</span>
+                  </div>
+                </Link>
+              )}
+
+              {(isReseller || isAdmin) && (
+                <Link href="/tutorials" onClick={() => setIsMobileMenuOpen(false)}>
+                  <div
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors cursor-pointer ${
+                      location === "/tutorials"
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
+                    }`}
+                  >
+                    <PlayCircle className="h-5 w-5" />
+                    <span>Updated Tutorials</span>
                   </div>
                 </Link>
               )}
