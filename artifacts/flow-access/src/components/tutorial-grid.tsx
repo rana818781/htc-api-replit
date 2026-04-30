@@ -66,12 +66,17 @@ function VideoCard({
             className="absolute inset-0 w-full h-full cursor-pointer"
           >
             <img
-              src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+              src={`https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`}
               alt={title}
               loading="lazy"
               className="absolute inset-0 w-full h-full object-cover"
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${videoId}/0.jpg`;
+                const img = e.currentTarget as HTMLImageElement;
+                if (img.src.includes("maxresdefault")) {
+                  img.src = `https://i.ytimg.com/vi/${videoId}/sddefault.jpg`;
+                } else if (img.src.includes("sddefault")) {
+                  img.src = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+                }
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
