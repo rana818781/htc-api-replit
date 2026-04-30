@@ -15,13 +15,13 @@ export type Tutorial =
 export const TUTORIALS: Tutorial[] = [
   {
     kind: "video",
-    title: "How Can Used Flow Ultra in Your Mobile Device",
+    title: "Veo3 Ultra - বাংলাদেশে এই প্রথম এই ধরনের একটা সিস্টেম আমরা নিয়ে এসেছি - Veo Flow API...",
     url: "https://www.youtube.com/watch?v=Qv4V-tZCGE8",
     videoId: "Qv4V-tZCGE8",
   },
   {
     kind: "video",
-    title: "How To Use Flow in PC/Laptop tutorial",
+    title: "আপনি কি একজন Veo3 Ultra Subscription Reseller? আপনি কি আপনার পেইজ বা ওয়েবসাইটে Veo3 Ultra sell করেন?",
     url: "https://www.youtube.com/watch?v=JrkQKKB5gHU",
     videoId: "JrkQKKB5gHU",
   },
