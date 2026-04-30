@@ -36,13 +36,21 @@ export const TUTORIALS: Tutorial[] = [
   },
 ];
 
-function VideoCard({ videoId, title }: { videoId: string; title: string }) {
-  const [playing, setPlaying] = useState(false);
-
+function VideoCard({
+  videoId,
+  title,
+  isActive,
+  onPlay,
+}: {
+  videoId: string;
+  title: string;
+  isActive: boolean;
+  onPlay: () => void;
+}) {
   return (
     <div className="group relative bg-[#141414] rounded-xl overflow-hidden border border-[#1e1e1e]">
       <div className="relative aspect-video bg-[#0d0d0d] overflow-hidden">
-        {playing ? (
+        {isActive ? (
           <iframe
             src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
             title={title}
@@ -53,7 +61,7 @@ function VideoCard({ videoId, title }: { videoId: string; title: string }) {
         ) : (
           <button
             type="button"
-            onClick={() => setPlaying(true)}
+            onClick={onPlay}
             aria-label={`Play: ${title}`}
             className="absolute inset-0 w-full h-full cursor-pointer"
           >
@@ -94,11 +102,19 @@ export function TutorialGrid({
   tutorials?: Tutorial[];
   columns?: string;
 }) {
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+
   return (
     <div className={`grid grid-cols-1 ${columns} gap-4`}>
       {tutorials.map((tut, i) =>
         tut.kind === "video" ? (
-          <VideoCard key={i} videoId={tut.videoId} title={tut.title} />
+          <VideoCard
+            key={i}
+            videoId={tut.videoId}
+            title={tut.title}
+            isActive={activeVideoId === tut.videoId}
+            onPlay={() => setActiveVideoId(tut.videoId)}
+          />
         ) : (
           <div
             key={i}
