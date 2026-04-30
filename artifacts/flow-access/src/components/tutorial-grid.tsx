@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Play, Clock } from "lucide-react";
 
 export type Tutorial =
@@ -35,6 +36,57 @@ export const TUTORIALS: Tutorial[] = [
   },
 ];
 
+function VideoCard({ videoId, title }: { videoId: string; title: string }) {
+  const [playing, setPlaying] = useState(false);
+
+  return (
+    <div className="group relative bg-[#141414] rounded-xl overflow-hidden border border-[#1e1e1e]">
+      <div className="relative aspect-video bg-[#0d0d0d] overflow-hidden">
+        {playing ? (
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
+            title={title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="absolute inset-0 w-full h-full"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setPlaying(true)}
+            aria-label={`Play: ${title}`}
+            className="absolute inset-0 w-full h-full cursor-pointer"
+          >
+            <img
+              src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+              alt={title}
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${videoId}/0.jpg`;
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Play className="h-6 w-6 text-white fill-white ml-0.5" />
+              </div>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
+              <span className="px-1.5 py-0.5 bg-white/10 backdrop-blur-sm rounded text-[10px] text-gray-200">
+                Tutorial
+              </span>
+            </div>
+          </button>
+        )}
+      </div>
+      <div className="p-3">
+        <h3 className="text-sm font-medium text-gray-200 line-clamp-2">{title}</h3>
+      </div>
+    </div>
+  );
+}
+
 export function TutorialGrid({
   tutorials = TUTORIALS,
   columns = "md:grid-cols-2",
@@ -46,39 +98,7 @@ export function TutorialGrid({
     <div className={`grid grid-cols-1 ${columns} gap-4`}>
       {tutorials.map((tut, i) =>
         tut.kind === "video" ? (
-          <a
-            key={i}
-            href={tut.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative bg-[#141414] rounded-xl overflow-hidden border border-[#1e1e1e] hover:border-[#333] transition-colors"
-          >
-            <div className="relative aspect-video bg-[#0d0d0d] overflow-hidden">
-              <img
-                src={`https://img.youtube.com/vi/${tut.videoId}/hqdefault.jpg`}
-                alt={tut.title}
-                loading="lazy"
-                className="absolute inset-0 w-full h-full object-cover"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${tut.videoId}/0.jpg`;
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-14 h-14 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Play className="h-6 w-6 text-white fill-white ml-0.5" />
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3">
-                <span className="px-1.5 py-0.5 bg-white/10 backdrop-blur-sm rounded text-[10px] text-gray-200">
-                  Tutorial
-                </span>
-              </div>
-            </div>
-            <div className="p-3">
-              <h3 className="text-sm font-medium text-gray-200 line-clamp-2">{tut.title}</h3>
-            </div>
-          </a>
+          <VideoCard key={i} videoId={tut.videoId} title={tut.title} />
         ) : (
           <div
             key={i}
