@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /admin-add-session
+Disallow: /usage
+Disallow: /user-dashboard
+
+Sitemap: https://dailyaitools.store/sitemap.xml
