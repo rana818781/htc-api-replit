@@ -1,4 +1,4 @@
-// Veo Flow API — Header Lock (runs at document_start)
+// HTC API — Header Lock (runs at document_start)
 // Main page: blocks ?, three-dot, ULTRA, profile
 // Project page (/project/): blocks three-dot, ULTRA + profile avatar
 // All pages: blocks "Veo 3.1 - Quality" model selection

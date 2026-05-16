@@ -269,8 +269,8 @@ const steps = [
 
 const faqItems = [
   {
-    question: "What exactly is Veo Flow API?",
-    answer: "Veo Flow API is a premium service that gives you seamless, managed access to Google Flow AI's video and image generation tools. We take care of all the technical complexity so you can focus purely on creating.",
+    question: "What exactly is HTC API?",
+    answer: "HTC API is a premium service that gives you seamless, managed access to Google Flow AI's video and image generation tools. We take care of all the technical complexity so you can focus purely on creating.",
   },
   {
     question: "How does the Chrome extension work?",
@@ -323,7 +323,7 @@ export default function Home() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-2">
-            <img src="/navbar-logo.png" alt="Veo Flow API" className="h-8 object-contain" />
+            <img src="/navbar-logo.png" alt="HTC API" className="h-8 object-contain" />
           </div>
           <nav className="flex items-center gap-3">
             <Link href="/plans" className="text-sm text-white/60 hover:text-white transition-colors hidden sm:block">
@@ -343,7 +343,7 @@ export default function Home() {
         <AnimatedMosaicBackground />
 
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-          <img src="/hero-logo.png" alt="Veo Flow API" className="h-24 sm:h-32 md:h-40 object-contain mx-auto mb-6 drop-shadow-2xl" />
+          <img src="/hero-logo.png" alt="HTC API" className="h-24 sm:h-32 md:h-40 object-contain mx-auto mb-6 drop-shadow-2xl" />
           <p className="text-white/60 text-base sm:text-lg max-w-xl mx-auto mb-8">
             Where the next wave of storytelling happens.
           </p>
@@ -362,7 +362,7 @@ export default function Home() {
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Watch &amp; Learn</h2>
             <p className="text-white/50 max-w-2xl mx-auto">
-              Quick tutorials to help you get the most out of Veo Flow API.
+              Quick tutorials to help you get the most out of HTC API.
             </p>
           </div>
           <TutorialGrid columns="md:grid-cols-2 lg:grid-cols-4" />
@@ -468,7 +468,7 @@ export default function Home() {
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Trusted by Creators</h2>
             <p className="text-white/50 max-w-2xl mx-auto">
-              Thousands of creators rely on Veo Flow API to turn their ideas into reality every day.
+              Thousands of creators rely on HTC API to turn their ideas into reality every day.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -535,7 +535,7 @@ export default function Home() {
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Common Questions</h2>
-            <p className="text-white/50">Everything you need to know about Veo Flow API.</p>
+            <p className="text-white/50">Everything you need to know about HTC API.</p>
           </div>
           <div className="space-y-3">
             {faqItems.map((item, i) => (
@@ -549,7 +549,7 @@ export default function Home() {
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to Create Something Amazing?</h2>
           <p className="text-white/50 mb-8 max-w-xl mx-auto">
-            Join creators worldwide who are already using Veo Flow API to produce incredible AI-generated content.
+            Join creators worldwide who are already using HTC API to produce incredible AI-generated content.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" asChild className="rounded-full px-8 h-12 text-base font-semibold bg-gradient-to-r from-[#5a3398] to-[#5547fd] text-white hover:opacity-90">
@@ -565,7 +565,7 @@ export default function Home() {
       <footer className="border-t border-white/5 py-12 px-4">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <img src="/navbar-logo.png" alt="Veo Flow API" className="h-6 object-contain" />
+            <img src="/navbar-logo.png" alt="HTC API" className="h-6 object-contain" />
           </div>
           <div className="flex items-center gap-6 text-sm text-white/40">
             <Link href="/plans" className="hover:text-white transition-colors">Plans</Link>
@@ -573,7 +573,7 @@ export default function Home() {
             <Link href="/sign-up" className="hover:text-white transition-colors">Get Started</Link>
           </div>
           <p className="text-xs text-white/30">
-            &copy; {new Date().getFullYear()} Veo Flow API. All rights reserved.
+            &copy; {new Date().getFullYear()} HTC API. All rights reserved.
           </p>
         </div>
       </footer>

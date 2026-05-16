@@ -1,4 +1,4 @@
-// Veo Flow API Extension — Site Bridge v2.0
+// HTC API Extension — Site Bridge v2.0
 // Runs on veoflowapi.com and ultraflow.replit.app
 // Auto-detects the user's API token and sends it to the background worker
 
@@ -22,7 +22,7 @@
       (resp) => {
         if (chrome.runtime.lastError) return;
         if (resp?.success) {
-          console.debug("[VeoFlowAPI] Extension connected ✓");
+          console.debug("[HTC API] Extension connected ✓");
         }
       }
     );

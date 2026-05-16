@@ -16,7 +16,7 @@ export type Tutorial =
 export const TUTORIALS: Tutorial[] = [
   {
     kind: "video",
-    title: "Veo3 Ultra - বাংলাদেশে এই প্রথম এই ধরনের একটা সিস্টেম আমরা নিয়ে এসেছি - Veo Flow API...",
+    title: "Veo3 Ultra - বাংলাদেশে এই প্রথম এই ধরনের একটা সিস্টেম আমরা নিয়ে এসেছি - HTC API...",
     url: "https://www.youtube.com/watch?v=Qv4V-tZCGE8",
     videoId: "Qv4V-tZCGE8",
   },

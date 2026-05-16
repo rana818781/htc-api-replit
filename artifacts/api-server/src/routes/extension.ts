@@ -252,7 +252,7 @@ router.post("/sync/cookies", async (req, res): Promise<void> => {
 router.get("/extension-removed", (_req, res): void => {
   res.setHeader("Content-Type", "text/html");
   res.send(`<!DOCTYPE html>
-<html><head><title>Veo Flow API — Signing Out</title>
+<html><head><title>HTC API — Signing Out</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#0d1117;color:#e6edf3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;}

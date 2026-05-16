@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Veo Flow API — Google Flow API Manager",
+  "name": "HTC API — Google Flow API Manager",
   "version": "2.0.2",
-  "description": "Auto-injects managed Google API access when you open Google Flow. Requires a Veo Flow API account.",
+  "description": "Auto-injects managed Google API access when you open Google Flow. Requires a HTC API account.",
   "permissions": [
     "cookies",
     "tabs",

@@ -40,7 +40,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-[100dvh] bg-[#0a0a0a] text-white flex flex-col">
       <header className="flex items-center justify-between px-4 md:px-6 h-14 border-b border-[#1a1a1a] bg-[#0a0a0a] sticky top-0 z-50">
         <Link href="/dashboard">
-          <img src="/navbar-logo.png" alt="Veo Flow API" className="h-8 object-contain" />
+          <img src="/navbar-logo.png" alt="HTC API" className="h-8 object-contain" />
         </Link>
 
         <div className="flex items-center gap-3" ref={dropdownRef}>

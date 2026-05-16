@@ -82,9 +82,9 @@
     chrome.runtime.sendMessage({ type: "FA_CHARGE", credits: credits }, function (resp) {
       if (chrome.runtime.lastError) return;
       if (resp && resp.success) {
-        console.log("[VeoFlowAPI] Charged " + resp.creditsCharged + " credits for video generation (x" + multiplier + "). Remaining: " + resp.creditsRemaining);
+        console.log("[HTC API] Charged " + resp.creditsCharged + " credits for video generation (x" + multiplier + "). Remaining: " + resp.creditsRemaining);
       } else if (resp && resp.error) {
-        console.warn("[VeoFlowAPI] Charge failed:", resp.error);
+        console.warn("[HTC API] Charge failed:", resp.error);
       }
     });
   }
@@ -108,7 +108,7 @@
 
     attachedButtons.add(sendBtn);
     sendBtn.addEventListener("click", onSendClick, true);
-    console.log("[VeoFlowAPI] Send button detected and listener attached");
+    console.log("[HTC API] Send button detected and listener attached");
   }
 
   function stopObserver() {
@@ -139,7 +139,7 @@
       subtree: true,
     });
 
-    console.log("[VeoFlowAPI] Video charge observer started on project page");
+    console.log("[HTC API] Video charge observer started on project page");
   }
 
   function checkAndStart() {

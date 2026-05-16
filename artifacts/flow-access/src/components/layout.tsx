@@ -26,7 +26,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <>
           <div className="md:hidden flex items-center justify-between p-4 border-b border-border">
             <Link href="/dashboard">
-              <img src="/navbar-logo.png" alt="Veo Flow API" className="h-8 object-contain" />
+              <img src="/navbar-logo.png" alt="HTC API" className="h-8 object-contain" />
             </Link>
             <Button
               variant="ghost"
@@ -44,7 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           >
             <div className="hidden md:block mb-8 px-2">
               <Link href="/dashboard">
-                <img src="/navbar-logo.png" alt="Veo Flow API" className="h-9 object-contain" />
+                <img src="/navbar-logo.png" alt="HTC API" className="h-9 object-contain" />
               </Link>
             </div>
 

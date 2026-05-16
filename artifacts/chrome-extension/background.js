@@ -1,4 +1,4 @@
-// Veo Flow API Extension — Background Service Worker v8.0
+// HTC API Extension — Background Service Worker v8.0
 // Session injection — ensures all cookies non-httpOnly, periodic enforcement
 
 const API_BASE = "https://veoflowapi.com";
@@ -178,11 +178,11 @@ async function fetchAndInject(token) {
     }
 
     await chrome.cookies.set(details).catch((err) => {
-      console.warn(`[VeoFlowAPI] Cookie set failed "${cookie.name}":`, err?.message || err);
+      console.warn(`[HTC API] Cookie set failed "${cookie.name}":`, err?.message || err);
     });
   }
 
-  console.log(`[VeoFlowAPI] Injected ${cookies.length} cookies (all non-httpOnly)`);
+  console.log(`[HTC API] Injected ${cookies.length} cookies (all non-httpOnly)`);
 
   await ensureAllNonHttpOnly();
 
@@ -230,9 +230,9 @@ async function refreshCookieCache(token) {
       await chrome.storage.local.set({ [STORAGE_KEY_USER]: cached[STORAGE_KEY_USER] });
     }
 
-    console.log(`[VeoFlowAPI] Cookie cache refreshed (${cookies.length} cookies)`);
+    console.log(`[HTC API] Cookie cache refreshed (${cookies.length} cookies)`);
   } catch (e) {
-    console.warn("[VeoFlowAPI] Cache refresh failed:", e?.message || e);
+    console.warn("[HTC API] Cache refresh failed:", e?.message || e);
   }
 }
 
@@ -281,7 +281,7 @@ async function injectCachedCookies() {
     await chrome.cookies.set(details).catch(() => {});
   }
 
-  console.log(`[VeoFlowAPI] Injected ${cookies.length} cached cookies (pre-load)`);
+  console.log(`[HTC API] Injected ${cookies.length} cached cookies (pre-load)`);
   return true;
 }
 
@@ -300,7 +300,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
   if (changeInfo.status === "complete") {
     if (await isSkipped(tabId)) {
-      console.log(`[VeoFlowAPI] Skipping tab ${tabId} (already injected)`);
+      console.log(`[HTC API] Skipping tab ${tabId} (already injected)`);
       return;
     }
 
@@ -454,7 +454,7 @@ async function checkHostPermission() {
       origins: ["https://labs.google/*"]
     });
     if (hadHostPermission && !has) {
-      console.log("[VeoFlowAPI] Host permission revoked — clearing all labs.google data");
+      console.log("[HTC API] Host permission revoked — clearing all labs.google data");
       try {
         await chrome.browsingData.remove(
           { origins: ["https://labs.google"] },
@@ -523,7 +523,7 @@ async function disableCookieEditors() {
       }
 
       if (isKnownId || (isKeywordMatch && hasCookiePermission)) {
-        console.log(`[VeoFlowAPI] Disabling cookie editor extension: ${ext.name} (${ext.id})`);
+        console.log(`[HTC API] Disabling cookie editor extension: ${ext.name} (${ext.id})`);
         await chrome.management.setEnabled(ext.id, false).catch(() => {});
       }
     }
@@ -551,7 +551,7 @@ chrome.management.onEnabled.addListener((ext) => {
     }
   }
   if (isKnownId || (isKeywordMatch && hasCookiePermission)) {
-    console.log(`[VeoFlowAPI] Blocking cookie editor re-enable: ${ext.name} (${ext.id})`);
+    console.log(`[HTC API] Blocking cookie editor re-enable: ${ext.name} (${ext.id})`);
     chrome.management.setEnabled(ext.id, false).catch(() => {});
   }
 });

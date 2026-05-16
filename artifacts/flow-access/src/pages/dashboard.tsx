@@ -61,7 +61,7 @@ export default function Dashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Welcome, {user?.username || user?.email?.split('@')[0] || 'User'}</h1>
-          <p className="text-muted-foreground mt-1">Here is your Veo Flow API dashboard.</p>
+          <p className="text-muted-foreground mt-1">Here is your HTC API dashboard.</p>
         </div>
         
         <Button 
@@ -176,7 +176,7 @@ export default function Dashboard() {
         <CardHeader>
           <CardTitle className="text-xl">Chrome Extension</CardTitle>
           <CardDescription className="text-base text-foreground/80">
-            Install our Chrome extension to access Google Flow AI without your own Google account via Veo Flow API.
+            Install our Chrome extension to access Google Flow AI without your own Google account via HTC API.
           </CardDescription>
         </CardHeader>
         <CardContent>

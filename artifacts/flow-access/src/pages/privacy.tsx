@@ -21,11 +21,11 @@ export default function Privacy() {
           <section>
             <h2 className="text-2xl font-semibold text-white mb-3">1. Introduction</h2>
             <p>
-              Welcome to Veo Flow API ("we", "our", "us"). We operate the website{" "}
+              Welcome to HTC API ("we", "our", "us"). We operate the website{" "}
               <a href="https://veoflowapi.com" className="text-purple-400 hover:underline">
                 https://veoflowapi.com
               </a>{" "}
-              and the official Veo Flow API browser extension (the "Extension").
+              and the official HTC API browser extension (the "Extension").
               This Privacy Policy explains what information we collect, how we use it,
               and the choices you have regarding your data when you use our website,
               extension, or any related services (collectively, the "Service").
@@ -91,9 +91,9 @@ export default function Privacy() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-white mb-3">4. The Veo Flow API Browser Extension</h2>
+            <h2 className="text-2xl font-semibold text-white mb-3">4. The HTC API Browser Extension</h2>
             <p>
-              The Veo Flow API browser extension is the official companion to the Veo
+              The HTC API browser extension is the official companion to the Veo
               Flow API service. Its single purpose is to securely connect your active
               browser workspace with your subscribed API plan.
             </p>
@@ -104,7 +104,7 @@ export default function Privacy() {
                 signed in.
               </li>
               <li>
-                Communicates only with the official Veo Flow API endpoints and the
+                Communicates only with the official HTC API endpoints and the
                 supported workspace domain required for the service to function.
               </li>
               <li>
@@ -141,7 +141,7 @@ export default function Privacy() {
               </li>
               <li>
                 <strong className="text-white">Protection of rights</strong> — to
-                protect the rights, property, or safety of Veo Flow API, our users,
+                protect the rights, property, or safety of HTC API, our users,
                 or others.
               </li>
               <li>
@@ -269,7 +269,7 @@ export default function Privacy() {
         </div>
 
         <div className="mt-16 pt-8 border-t border-white/10 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Veo Flow API. All rights reserved.
+          © {new Date().getFullYear()} HTC API. All rights reserved.
         </div>
       </div>
     </div>
