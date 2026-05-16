@@ -1,0 +1,25 @@
+uploads = []
+
+[[generated]]
+id = "Px46CzAwTL4KPpUXnRloX"
+uri = "file://attached_assets/generated_images/htc-api-square-logo.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "ZhLc9rveAIvqaHuJ0mVBh"
+uri = "file://attached_assets/generated_images/htc-api-navbar-logo.png"
+type = "image"
+title = "generated_image"
+
+[[outputs]]
+id = "RvCq8plb6Yn0R8CITjce-"
+uri = "file://attached_assets/generated_images/htc-api-square-logo.png"
+type = "image"
+title = "HTC API square logo (icon/hero)"
+
+[[outputs]]
+id = "l9DzivxBvYAkHnMuM4-Cs"
+uri = "file://attached_assets/generated_images/htc-api-navbar-logo.png"
+type = "image"
+title = "HTC API navbar logo (header)"

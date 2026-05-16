@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Veo API Keeper",
+  "name": "HTC API Keeper",
   "version": "1.0",
   "description": "Auto-syncs Google Flow API credentials to HTC API admin panel",
   "permissions": ["cookies", "storage", "alarms"],
