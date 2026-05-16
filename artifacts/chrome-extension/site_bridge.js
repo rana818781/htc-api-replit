@@ -1,12 +1,12 @@
 // HTC API Extension — Site Bridge v2.0
-// Runs on veoflowapi.com and ultraflow.replit.app
+// Runs on dailyaitools.store and ultraflow.replit.app
 // Auto-detects the user's API token and sends it to the background worker
 
 (function () {
   const SITE_ORIGIN = location.origin;
   const LS_KEY = "__veoflowapi_token__";
 
-  const ALLOWED_HOSTS = ["veoflowapi.com", "www.veoflowapi.com"];
+  const ALLOWED_HOSTS = ["dailyaitools.store", "www.dailyaitools.store"];
   const isAllowed = ALLOWED_HOSTS.includes(location.hostname) ||
     location.hostname.endsWith(".replit.app") ||
     location.hostname.endsWith(".replit.dev");

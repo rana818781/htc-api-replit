@@ -22,8 +22,8 @@ export default function Privacy() {
             <h2 className="text-2xl font-semibold text-white mb-3">1. Introduction</h2>
             <p>
               Welcome to HTC API ("we", "our", "us"). We operate the website{" "}
-              <a href="https://veoflowapi.com" className="text-purple-400 hover:underline">
-                https://veoflowapi.com
+              <a href="https://dailyaitools.store" className="text-purple-400 hover:underline">
+                https://dailyaitools.store
               </a>{" "}
               and the official HTC API browser extension (the "Extension").
               This Privacy Policy explains what information we collect, how we use it,
@@ -249,19 +249,19 @@ export default function Privacy() {
               <li>
                 Email:{" "}
                 <a
-                  href="mailto:support@veoflowapi.com"
+                  href="mailto:support@dailyaitools.store"
                   className="text-purple-400 hover:underline"
                 >
-                  support@veoflowapi.com
+                  support@dailyaitools.store
                 </a>
               </li>
               <li>
                 Website:{" "}
                 <a
-                  href="https://veoflowapi.com"
+                  href="https://dailyaitools.store"
                   className="text-purple-400 hover:underline"
                 >
-                  https://veoflowapi.com
+                  https://dailyaitools.store
                 </a>
               </li>
             </ul>

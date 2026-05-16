@@ -182,17 +182,24 @@ export default function Dashboard() {
         <CardContent>
           <div className="flex flex-col items-center justify-center bg-background p-8 rounded-lg border border-border shadow-sm">
             <Download className="h-10 w-10 text-primary mb-4" />
-            <Button asChild size="lg" className="w-full max-w-xs" data-testid="button-get-extension">
-              <a
-                href="https://chromewebstore.google.com/detail/veo-flow-api-%E2%80%94-google-flo/nhpbdcgjjbnoalanbgaeonkhbkbldmja"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Get Extension
-              </a>
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xl justify-center">
+              <Button asChild size="lg" className="flex-1 sm:max-w-xs" data-testid="button-get-extension">
+                <a
+                  href="https://chromewebstore.google.com/detail/veo-flow-api-%E2%80%94-google-flo/nhpbdcgjjbnoalanbgaeonkhbkbldmja"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Get Extension
+                </a>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="flex-1 sm:max-w-xs" data-testid="button-download-extension">
+                <a href="/htc-api-extension.zip" download>
+                  Download Extension
+                </a>
+              </Button>
+            </div>
             <p className="text-xs text-muted-foreground mt-3 text-center">
-              Clicking this will take you to the Chrome Web Store to install the extension.
+              Install from the Chrome Web Store, or download the ZIP to load it manually as an unpacked extension.
             </p>
           </div>
         </CardContent>

@@ -29,6 +29,7 @@ app.use(
 const TRUSTED_ORIGINS = [
   /^https:\/\/[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.replit\.dev$/,
   /^https:\/\/[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.replit\.app$/,
+  /^https:\/\/(www\.)?dailyaitools\.store$/,
   /^https:\/\/(www\.)?veoflowapi\.com$/,
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,

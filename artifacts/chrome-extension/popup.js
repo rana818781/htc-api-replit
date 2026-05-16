@@ -1,6 +1,6 @@
 // HTC API Extension — Popup Script v2.0
 
-const SITE_URL = "https://veoflowapi.com";
+const SITE_URL = "https://dailyaitools.store";
 const STORAGE_KEY_TOKEN = "fa_api_token";
 
 function show(id) {
