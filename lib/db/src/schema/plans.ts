@@ -1,15 +1,17 @@
-import { pgTable, serial, varchar, numeric, integer, boolean, text, timestamp } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const plansTable = pgTable("plans", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  priceUsd: numeric("price_usd", { precision: 10, scale: 2 }).notNull(),
+export const plansTable = sqliteTable("plans", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  priceUsd: text("price_usd").notNull(),
   creditsPerMonth: integer("credits_per_month").notNull(),
   description: text("description"),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
 });
 
 export const insertPlanSchema = createInsertSchema(plansTable).omit({ id: true, createdAt: true });

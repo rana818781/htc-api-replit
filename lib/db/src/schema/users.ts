@@ -1,25 +1,27 @@
-import { pgTable, serial, varchar, boolean, integer, timestamp } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { plansTable } from "./plans";
 
-export const usersTable = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: varchar("username", { length: 255 }).notNull().unique(),
-  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
-  clerkUserId: varchar("clerk_user_id", { length: 255 }),
-  email: varchar("email", { length: 255 }),
-  isAdmin: boolean("is_admin").notNull().default(false),
-  isReseller: boolean("is_reseller").notNull().default(false),
+export const usersTable = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  clerkUserId: text("clerk_user_id"),
+  email: text("email"),
+  isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
+  isReseller: integer("is_reseller", { mode: "boolean" }).notNull().default(false),
   addedBy: integer("added_by"),
   planId: integer("plan_id").references(() => plansTable.id),
   creditsTotal: integer("credits_total").notNull().default(0),
   creditsUsed: integer("credits_used").notNull().default(0),
-  subscriptionStartedAt: timestamp("subscription_started_at", { withTimezone: true }),
-  planExpiresAt: timestamp("plan_expires_at", { withTimezone: true }),
+  subscriptionStartedAt: integer("subscription_started_at", { mode: "timestamp" }),
+  planExpiresAt: integer("plan_expires_at", { mode: "timestamp" }),
   lastSessionId: integer("last_session_id"),
   tokenVersion: integer("token_version").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
 });
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true });

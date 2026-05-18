@@ -1,17 +1,19 @@
-import { pgTable, serial, varchar, text, boolean, timestamp, integer } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const sessionsTable = pgTable("sessions", {
-  id: serial("id").primaryKey(),
-  label: varchar("label", { length: 255 }).notNull(),
+export const sessionsTable = sqliteTable("sessions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  label: text("label").notNull(),
   cookieData: text("cookie_data").notNull(),
-  isActive: boolean("is_active").notNull().default(true),
-  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  lastUsedAt: integer("last_used_at", { mode: "timestamp" }),
   usageCount: integer("usage_count").notNull().default(0),
-  syncKey: varchar("sync_key", { length: 64 }),
-  cookieUpdatedAt: timestamp("cookie_updated_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  syncKey: text("sync_key"),
+  cookieUpdatedAt: integer("cookie_updated_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
 });
 
 export const insertSessionSchema = createInsertSchema(sessionsTable).omit({ id: true, createdAt: true, usageCount: true, syncKey: true, cookieUpdatedAt: true });
