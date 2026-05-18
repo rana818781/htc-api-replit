@@ -257,6 +257,11 @@ router.patch("/reseller/users/:id/password", async (req: AuthenticatedRequest, r
     return;
   }
 
+  if (!currentUser.isAdmin && (targetUser.isAdmin || targetUser.isReseller)) {
+    res.status(403).json({ error: "Cannot reset password for a privileged account" });
+    return;
+  }
+
   try {
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await db
