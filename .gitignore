@@ -5,6 +5,10 @@ dist
 tmp
 out-tsc
 *.tsbuildinfo
+
+# Allow api-server pre-built dist for cPanel deployment
+!artifacts/api-server/dist
+!artifacts/api-server/dist/**
 .expo
 .expo-shared
 

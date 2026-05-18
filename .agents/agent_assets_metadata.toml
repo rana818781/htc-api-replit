@@ -23,3 +23,9 @@ id = "l9DzivxBvYAkHnMuM4-Cs"
 uri = "file://attached_assets/generated_images/htc-api-navbar-logo.png"
 type = "image"
 title = "HTC API navbar logo (header)"
+
+[[outputs]]
+id = "wQgz-WZvWU-OZGw_4N2x2"
+uri = "file://htc-deploy.zip"
+type = "unspecified"
+title = "HTC API - cPanel Deployment Package"
