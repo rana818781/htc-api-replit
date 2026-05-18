@@ -7,6 +7,7 @@ export const apiTokensTable = pgTable("api_tokens", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => usersTable.id),
   token: varchar("token", { length: 255 }).notNull().unique(),
+  tokenVersion: integer("token_version").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
 });

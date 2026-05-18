@@ -157,11 +157,6 @@ export async function requireApiToken(
     return;
   }
 
-  await db
-    .update(apiTokensTable)
-    .set({ lastUsedAt: new Date() })
-    .where(eq(apiTokensTable.id, apiToken.id));
-
   const [user] = await db
     .select()
     .from(usersTable)
@@ -171,6 +166,16 @@ export async function requireApiToken(
     res.status(401).json({ error: "User not found" });
     return;
   }
+
+  if ((user.tokenVersion ?? 0) !== (apiToken.tokenVersion ?? 0)) {
+    res.status(401).json({ error: "API token has been revoked. Please re-generate your extension token." });
+    return;
+  }
+
+  await db
+    .update(apiTokensTable)
+    .set({ lastUsedAt: new Date() })
+    .where(eq(apiTokensTable.id, apiToken.id));
 
   req.dbUser = user;
   next();

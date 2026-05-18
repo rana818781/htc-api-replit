@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, count, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { db, usersTable, plansTable } from "@workspace/db";
+import { db, usersTable, plansTable, apiTokensTable } from "@workspace/db";
 import { requireReseller, type AuthenticatedRequest } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -263,6 +263,7 @@ router.patch("/reseller/users/:id/password", async (req: AuthenticatedRequest, r
       .update(usersTable)
       .set({ passwordHash, tokenVersion: sql`${usersTable.tokenVersion} + 1` })
       .where(eq(usersTable.id, userId));
+    await db.delete(apiTokensTable).where(eq(apiTokensTable.userId, userId));
     res.json({ success: true });
   } catch (err) {
     console.error("Failed to change password:", err);

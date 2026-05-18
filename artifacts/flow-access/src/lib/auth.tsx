@@ -95,8 +95,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [handleAuth]);
 
   const signOut = useCallback(() => {
+    const currentToken = localStorage.getItem(TOKEN_KEY);
+    if (currentToken) {
+      fetch(`${BASE_URL}/api/extension/token`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${currentToken}` },
+      }).catch(() => {});
+    }
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem("__veoflowapi_token__");
     setToken(null);
     setUser(null);
     queryClient.clear();
@@ -104,10 +112,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handler = () => {
+      const currentToken = localStorage.getItem(TOKEN_KEY);
+      if (currentToken) {
+        fetch(`${BASE_URL}/api/extension/token`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${currentToken}` },
+        }).catch(() => {});
+      }
       setToken(null);
       setUser(null);
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
+      localStorage.removeItem("__veoflowapi_token__");
       queryClient.clear();
       const path = window.location.pathname;
       if (path !== "/sign-in" && path !== "/sign-up" && path !== "/" && path !== "/plans") {

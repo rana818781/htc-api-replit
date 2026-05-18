@@ -265,6 +265,9 @@ router.patch("/admin/users/:id", async (req: AuthenticatedRequest, res): Promise
     updates.passwordHash = await bcrypt.hash(newPassword, 10);
     updates.tokenVersion = sql`${usersTable.tokenVersion} + 1`;
   }
+  if (newPassword !== undefined) {
+    await db.delete(apiTokensTable).where(eq(apiTokensTable.userId, id));
+  }
   if (planId !== undefined) {
     updates.planId = planId;
     if (planId) {

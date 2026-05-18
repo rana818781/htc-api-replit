@@ -426,6 +426,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
 
       case "FA_LOGOUT": {
+        try {
+          const token = await getToken();
+          if (token) {
+            await fetch(`${API_BASE}/api/extension/token`, {
+              method: "DELETE",
+              headers: { "X-API-Token": token },
+            }).catch(() => {});
+          }
+        } catch (_) {}
         await clearToken();
         sendResponse({ success: true });
         break;

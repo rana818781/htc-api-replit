@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { db, plansTable, usersTable } from "@workspace/db";
+import { db, plansTable, usersTable, apiTokensTable } from "@workspace/db";
 import { logger } from "./logger";
 
 const DEFAULT_PLANS = [
@@ -30,7 +30,11 @@ const DEFAULT_PLANS = [
 export async function seedAdmin(): Promise<void> {
   const adminUsername = process.env.ADMIN_USERNAME;
   const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminUsername) return;
+
+  if (!adminUsername || !adminPassword) {
+    logger.info("ADMIN_USERNAME or ADMIN_PASSWORD not set, skipping admin seed");
+    return;
+  }
 
   const [user] = await db
     .select()
@@ -38,20 +42,31 @@ export async function seedAdmin(): Promise<void> {
     .where(eq(usersTable.username, adminUsername));
 
   if (user) {
-    if (user.isAdmin) {
-      logger.info({ adminUsername }, "Admin already set, skipping");
+    const passwordMatches = await bcrypt.compare(adminPassword, user.passwordHash);
+
+    if (user.isAdmin && passwordMatches) {
+      logger.info({ adminUsername }, "Admin already set with correct password, skipping");
       return;
     }
-    await db
-      .update(usersTable)
-      .set({ isAdmin: true })
-      .where(eq(usersTable.id, user.id));
-    logger.info({ adminUsername }, "Admin privileges granted on startup");
-    return;
-  }
 
-  if (!adminPassword) {
-    logger.info({ adminUsername }, "Admin user not found and no ADMIN_PASSWORD set, skipping");
+    const updates: Record<string, unknown> = {
+      isAdmin: true,
+      tokenVersion: sql`${usersTable.tokenVersion} + 1`,
+    };
+
+    if (!passwordMatches) {
+      logger.warn(
+        { adminUsername },
+        "Existing user with admin username has wrong password — resetting password and revoking tokens",
+      );
+      updates.passwordHash = await bcrypt.hash(adminPassword, 10);
+    }
+
+    await db.update(usersTable).set(updates).where(eq(usersTable.id, user.id));
+
+    await db.delete(apiTokensTable).where(eq(apiTokensTable.userId, user.id));
+
+    logger.info({ adminUsername }, "Admin privileges granted and existing tokens revoked");
     return;
   }
 

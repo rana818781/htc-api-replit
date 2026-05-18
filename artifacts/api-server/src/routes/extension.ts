@@ -2,7 +2,7 @@ import { Router, type IRouter, type Response, type NextFunction } from "express"
 import { eq, asc, sql, and, ne, gt } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db, usersTable, sessionsTable, usageLogsTable, apiTokensTable, plansTable } from "@workspace/db";
-import { requireAuth, requireApiToken, type AuthenticatedRequest } from "../middlewares/auth";
+import { requireAuth, requireApiToken, verifyToken, type AuthenticatedRequest } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -35,6 +35,8 @@ async function checkAndExpireUser(userId: number) {
 
 router.get("/extension/token", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
   const userId = req.userId!;
+  const user = req.dbUser!;
+  const currentVersion = user.tokenVersion ?? 0;
 
   const [existingToken] = await db
     .select()
@@ -42,14 +44,46 @@ router.get("/extension/token", requireAuth, async (req: AuthenticatedRequest, re
     .where(eq(apiTokensTable.userId, userId));
 
   if (existingToken) {
-    res.json({ token: existingToken.token });
-    return;
+    if ((existingToken.tokenVersion ?? 0) === currentVersion) {
+      res.json({ token: existingToken.token });
+      return;
+    }
+    await db.delete(apiTokensTable).where(eq(apiTokensTable.userId, userId));
   }
 
   const token = randomBytes(32).toString("hex");
-  await db.insert(apiTokensTable).values({ userId, token });
+  await db.insert(apiTokensTable).values({ userId, token, tokenVersion: currentVersion });
 
   res.json({ token });
+});
+
+router.delete("/extension/token", async (req: AuthenticatedRequest, res): Promise<void> => {
+  const rawApiToken = req.headers["x-api-token"] as string | undefined;
+  if (rawApiToken) {
+    await db.delete(apiTokensTable).where(eq(apiTokensTable.token, rawApiToken));
+    res.json({ success: true });
+    return;
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const payload = verifyToken(authHeader.slice(7));
+  if (!payload) {
+    res.status(401).json({ error: "Invalid or expired token" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, payload.userId));
+  if (!user || (user.tokenVersion ?? 0) !== (payload.tv ?? 0)) {
+    res.status(401).json({ error: "Session expired. Please sign in again." });
+    return;
+  }
+
+  await db.delete(apiTokensTable).where(eq(apiTokensTable.userId, user.id));
+  res.json({ success: true });
 });
 
 router.get("/extension/me", requireApiToken, async (req: AuthenticatedRequest, res): Promise<void> => {
